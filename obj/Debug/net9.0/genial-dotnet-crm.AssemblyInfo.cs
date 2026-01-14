@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("genial-dotnet-crm")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7f9c480e14e77dd83a893e7123f74cf288010be9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b3f391cca6a217615fbc31c2a31bb755f342762e")]
 [assembly: System.Reflection.AssemblyProductAttribute("genial-dotnet-crm")]
 [assembly: System.Reflection.AssemblyTitleAttribute("genial-dotnet-crm")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
