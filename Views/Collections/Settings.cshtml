@@ -1,0 +1,324 @@
+@{
+    ViewData["Title"] = "Settings";
+    Layout = "_DashboardLayout";
+    var stagesList = ViewData["Stages"] as List<genial_dotnet_crm.Models.Stage> ?? new List<genial_dotnet_crm.Models.Stage>();
+}
+@Html.AntiForgeryToken()
+
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div class="w-16 bg-gray-50 border-r border-gray-200 flex flex-col">
+        <div class="flex flex-col h-full">
+            <div class="p-3 border-b border-gray-200">
+                <div class="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                    PB
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-center py-4 gap-4">
+                <!-- Collections -->
+                <a asp-action="Index" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-database text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Collections
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Logs -->
+                <a asp-action="Logs" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-chart-line text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Logs
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Settings -->
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100">
+                        <i class="fas fa-code text-gray-700"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Settings
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stage Selector -->
+            <div class="mt-auto p-3 border-t border-gray-200">
+                <div class="relative group">
+                    <div id="stageSelector" class="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 hover:border-gray-400 transition-colors">
+                        @{
+                            var currentStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                            var currentStageObj = stagesList.FirstOrDefault(s => s.Key == currentStageKey);
+                        }
+                        <span id="stageLetter" class="text-gray-700 font-bold text-sm">@(currentStageObj?.Letter ?? "H")</span>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <span id="stageTooltip">@(currentStageObj?.Label ?? "HML")</span>
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom User Avatar -->
+            <div class="p-3">
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-medium cursor-pointer">
+                        @(ViewData["UserEmail"]?.ToString()?.Substring(0, 1).ToUpper() ?? "T")
+                    </div>
+                    <!-- User Menu Dropdown -->
+                    <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="py-2">
+                            <!-- User Email -->
+                            <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                                @(ViewData["UserEmail"]?.ToString() ?? "")
+                            </div>
+                            <!-- Manage Superusers -->
+                            <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-shield-alt w-5 text-gray-600"></i>
+                                <span class="ml-3">Manage superusers</span>
+                            </a>
+                            <!-- Logout -->
+                            <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
+                                    <i class="fas fa-sign-out-alt w-5 text-gray-600"></i>
+                                    <span class="ml-3">Sair</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4 border-b border-gray-200">
+            <div class="text-xs font-semibold text-gray-500 uppercase mb-3">System</div>
+            <div class="space-y-1">
+                <a href="#" class="px-3 py-2 bg-gray-100 rounded-md cursor-pointer flex items-center gap-3 text-sm font-medium text-gray-700">
+                    <i class="fas fa-home text-gray-700"></i>
+                    <span>Application</span>
+                </a>
+                <a href="#" class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                    <i class="fas fa-envelope text-gray-600"></i>
+                    <span>Mail settings</span>
+                </a>
+                <a href="#" class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                    <i class="fas fa-folder text-gray-600"></i>
+                    <span>Files storage</span>
+                </a>
+                <a href="#" class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                    <i class="fas fa-database text-gray-600"></i>
+                    <span>Backups</span>
+                </a>
+                <a href="#" class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                    <i class="fas fa-clock text-gray-600"></i>
+                    <span>Crons</span>
+                </a>
+            </div>
+            
+            <div class="mt-6">
+                <div class="text-xs font-semibold text-gray-500 uppercase mb-3">Sync</div>
+                <div class="space-y-1">
+                    <a href="#" class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                        <i class="fas fa-upload text-gray-600"></i>
+                        <span>Export collections</span>
+                    </a>
+                    <a href="#" class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 text-sm text-gray-700">
+                        <i class="fas fa-download text-gray-600"></i>
+                        <span>Import collections</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col bg-white overflow-y-auto">
+        <!-- Header -->
+        <div class="bg-white px-8 py-5 border-b border-gray-200">
+            @{
+                var breadcrumbStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                var breadcrumbStageObj = stagesList.FirstOrDefault(s => s.Key == breadcrumbStageKey);
+            }
+            <h1 class="text-xl font-semibold text-gray-900">@(breadcrumbStageObj?.Label ?? "HML") / Settings / Application</h1>
+        </div>
+
+        <!-- Settings Card -->
+        <div class="px-8 py-6">
+            <div class="bg-white border border-gray-200 rounded-lg p-6 max-w-3xl">
+                <!-- Application Name and URL -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Application name <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            value="Acme" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Application URL <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            value="https://test.pocketbase.io" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                    </div>
+                </div>
+
+                <!-- Features/Settings -->
+                <div class="space-y-4 mb-6">
+                    <!-- User IP proxy headers -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-link text-gray-600"></i>
+                            <span class="text-sm text-gray-700">User IP proxy headers</span>
+                        </div>
+                        <select class="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Disabled</option>
+                            <option>Enabled</option>
+                        </select>
+                    </div>
+
+                    <!-- Rate limiting -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-chart-line text-gray-600"></i>
+                            <span class="text-sm text-gray-700">Rate limiting</span>
+                        </div>
+                        <select class="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-green-50 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option selected>Enabled</option>
+                            <option>Disabled</option>
+                        </select>
+                    </div>
+
+                    <!-- Batch API -->
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-list text-gray-600"></i>
+                            <span class="text-sm text-gray-700">Batch API</span>
+                        </div>
+                        <select class="px-3 py-1.5 border border-gray-300 rounded-md text-sm bg-green-50 border-green-300 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option selected>Enabled</option>
+                            <option>Disabled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Toggle -->
+                <div class="mb-6 pb-6 border-b border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-400"></div>
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-700">Hide collection create and edit controls</span>
+                            <i class="fas fa-info-circle text-gray-400 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex justify-end">
+                    <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded-md text-sm font-medium cursor-not-allowed">
+                        Save changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-8 py-4 bg-white border-t border-gray-200 text-xs text-gray-500">
+            Docs | PocketBase v0.34.2
+        </div>
+    </div>
+</div>
+
+<!-- Stage Selection Modal -->
+<div id="stageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-80">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Select Stage</h3>
+            <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-2">
+            @foreach (var stageItem in stagesList)
+            {
+                <form asp-action="UpdateStage" asp-controller="Collections" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="stage" value="@stageItem.Key" />
+                    <button type="submit" class="w-full px-4 py-3 text-left border-2 @(ViewData["Stage"]?.ToString() == stageItem.Key ? "border-black bg-gray-50" : "border-gray-200") rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-gray-900">@stageItem.Label</div>
+                                <div class="text-xs text-gray-500">@stageItem.Description</div>
+                            </div>
+                            <div class="w-8 h-8 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                                <span class="text-gray-700 font-bold text-sm">@stageItem.Letter</span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Stage configuration
+        const stages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((List<genial_dotnet_crm.Models.Stage>)ViewData["Stages"]).ToDictionary(s => s.Key, s => new { letter = s.Letter, name = s.Label })));
+
+        // Get current stage from server (session)
+        const currentStage = '@ViewData["Stage"]' || 'hml';
+
+        // Update stage display
+        function updateStageDisplay(stage) {
+            const stageData = stages[stage];
+            if (stageData) {
+                const letterEl = document.getElementById('stageLetter');
+                const tooltipEl = document.getElementById('stageTooltip');
+                if (letterEl) letterEl.textContent = stageData.letter;
+                if (tooltipEl) tooltipEl.textContent = stageData.name;
+            }
+        }
+
+        // Initialize stage display
+        updateStageDisplay(currentStage);
+
+        // Open modal
+        document.getElementById('stageSelector').addEventListener('click', function() {
+            document.getElementById('stageModal').classList.remove('hidden');
+        });
+
+        // Close modal
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('stageModal').classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('stageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    </script>
+}
+
+

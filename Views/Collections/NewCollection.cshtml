@@ -1,0 +1,1262 @@
+@model genial_dotnet_crm.Models.Collection
+@{
+    var isEditMode = ViewData["IsEditMode"] as bool? ?? false;
+    ViewData["Title"] = isEditMode ? "Edit Collection" : "New Collection";
+    Layout = "_DashboardLayout";
+    var stagesList = ViewData["Stages"] as List<genial_dotnet_crm.Models.Stage> ?? new List<genial_dotnet_crm.Models.Stage>();
+}
+@Html.AntiForgeryToken()
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-16 bg-gray-50 border-r border-gray-200 flex flex-col">
+        <!-- Top Section with Icons -->
+        <div class="flex flex-col h-full">
+            <div class="p-3 border-b border-gray-200">
+                <div class="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                    PB
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-center py-4 gap-4">
+                <!-- Collections -->
+                <a asp-action="Index" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100">
+                        <i class="fas fa-database text-gray-700"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Collections
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Logs -->
+                <a asp-action="Logs" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-chart-line text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Logs
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Settings -->
+                <a asp-action="Settings" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-code text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Settings
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Stage Selector -->
+            <div class="mt-auto p-3 border-t border-gray-200">
+                <div class="relative group">
+                    <div id="stageSelector" class="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 hover:border-gray-400 transition-colors">
+                        @{
+                            var currentStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                            var currentStageObj = stagesList.FirstOrDefault(s => s.Key == currentStageKey);
+                        }
+                        <span id="stageLetter" class="text-gray-700 font-bold text-sm">@(currentStageObj?.Letter ?? "H")</span>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <span id="stageTooltip">@(currentStageObj?.Label ?? "HML")</span>
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom User Avatar -->
+            <div class="p-3">
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-medium cursor-pointer">
+                        @(ViewData["UserEmail"]?.ToString()?.Substring(0, 1).ToUpper() ?? "T")
+                    </div>
+                    <!-- User Menu Dropdown -->
+                    <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="py-2">
+                            <!-- User Email -->
+                            <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                                @(ViewData["UserEmail"]?.ToString() ?? "")
+                            </div>
+                            <!-- Manage Superusers -->
+                            <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-shield-alt w-5 text-gray-600"></i>
+                                <span class="ml-3">Manage superusers</span>
+                            </a>
+                            <!-- Logout -->
+                            <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
+                                    <i class="fas fa-sign-out-alt w-5 text-gray-600"></i>
+                                    <span class="ml-3">Sair</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collections Panel -->
+    <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4 border-b border-gray-200">
+            <input 
+                type="text" 
+                placeholder="Search collections..." 
+                class="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-3">
+            @{
+                var collectionsList = ViewData["Collections"] as List<genial_dotnet_crm.Models.Collection>;
+            }
+            @if (collectionsList != null && collectionsList.Any())
+            {
+                @foreach (var collection in collectionsList)
+                {
+                    <div class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 mb-1 collection-item" data-collection-id="@collection.Id" onclick="window.location.href='@Url.Action("Collection", "Collections", new { id = collection.Id })'">
+                        <i class="fas fa-folder text-gray-600"></i>
+                        <span class="text-sm text-gray-700">@(string.IsNullOrEmpty(collection.Label) ? collection.Name : collection.Label)</span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="px-3 py-2 text-sm text-gray-500 text-center">
+                    No collections found
+                </div>
+            }
+
+            <div class="px-3 mt-4">
+                <a asp-action="NewCollection" asp-controller="Collections" class="w-full px-4 py-2 bg-white border-2 border-gray-900 rounded-md font-medium text-sm hover:bg-gray-50 flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span>New collection</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-white">
+        <!-- Header -->
+        <div class="px-8 py-5 border-b border-gray-200 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                @{
+                    var breadcrumbStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                    var breadcrumbStageObj = stagesList.FirstOrDefault(s => s.Key == breadcrumbStageKey);
+                }
+                <span class="text-gray-400 text-base">@(breadcrumbStageObj?.Label ?? "HML")</span>
+                <span class="text-gray-400 text-base">/</span>
+                <span class="text-gray-400 text-base">Collections</span>
+                <span class="text-gray-400 text-base">/</span>
+                <strong class="text-gray-900 text-base" id="collectionModalTitle">
+                    @if (isEditMode)
+                    {
+                        @(string.IsNullOrEmpty(Model?.Label) ? Model?.Name : Model?.Label)
+                    }
+                    else
+                    {
+                        <text>New collection</text>
+                    }
+                </strong>
+            </div>
+            <div class="flex gap-3">
+                <a asp-action="Index" asp-controller="Collections" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                @if (isEditMode)
+                {
+                    <button id="deleteCollectionBtn" class="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">
+                        Delete
+                    </button>
+                    <a asp-action="Migrate" asp-controller="Collections" asp-route-id="@ViewData["CollectionId"]" class="px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 inline-flex items-center">
+                        Migrate
+                    </a>
+                }
+                <button id="createCollectionBtn" class="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800">
+                    <span id="createCollectionBtnText">@(isEditMode ? "Update" : "Create")</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Form Content -->
+        <div class="flex-1 overflow-y-auto px-8 py-6">
+            <!-- Name and Type -->
+            <div class="flex gap-4 mb-6">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Label <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="collectionLabel"
+                        placeholder="eg. 'Postagens'" 
+                        value="@(Model?.Label ?? "")"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        System Name <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="collectionName"
+                        placeholder="eg. 'posts'" 
+                        value="@(Model?.Name ?? "")"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                        @(isEditMode ? "readonly" : "")
+                    >
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Type
+                    </label>
+                    <select id="collectionType" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        @if (Model?.Type == "Base")
+                        {
+                            <option value="Base" selected>Base</option>
+                        }
+                        else
+                        {
+                            <option value="Base">Base</option>
+                        }
+                        @if (Model?.Type == "Auth")
+                        {
+                            <option value="Auth" selected>Auth</option>
+                        }
+                        else
+                        {
+                            <option value="Auth">Auth</option>
+                        }
+                        @if (Model?.Type == "View")
+                        {
+                            <option value="View" selected>View</option>
+                        }
+                        else
+                        {
+                            <option value="View">View</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-4">
+                <div class="flex gap-1">
+                    <button class="px-4 py-2 text-sm font-medium text-gray-900 border-b-2 border-gray-900 -mb-px" data-tab="fields">
+                        Fields
+                    </button>
+                    <button class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="api-rules">
+                        API Rules
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fields Tab Content -->
+            <div id="fieldsTab" class="tab-content">
+                <!-- Default Fields -->
+                <div id="fieldsList" class="grid grid-cols-12 gap-4 mb-4">
+                    <!-- id field -->
+                    <div class="col-span-12 flex items-center justify-between p-3 border border-gray-200 rounded-md draggable-field" draggable="true">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-grip-vertical text-gray-400 cursor-move hover:text-gray-600 drag-handle"></i>
+                            <i class="fas fa-font text-gray-600"></i>
+                            <span class="text-sm font-medium text-gray-900">id</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">Nonempty</span>
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- created field -->
+                    <div id="createdField" class="col-span-12 flex items-center justify-between p-3 border border-gray-200 rounded-md draggable-field" draggable="true">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-grip-vertical text-gray-400 cursor-move hover:text-gray-600 drag-handle"></i>
+                            <i class="fas fa-calendar text-gray-600"></i>
+                            <span class="text-sm font-medium text-gray-900">created</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <select class="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none">
+                                <option>Create</option>
+                                <option>Update</option>
+                                <option>Create/Update</option>
+                            </select>
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- updated field -->
+                    <div class="col-span-12 flex items-center justify-between p-3 border border-gray-200 rounded-md draggable-field" draggable="true">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-grip-vertical text-gray-400 cursor-move hover:text-gray-600 drag-handle"></i>
+                            <i class="fas fa-calendar text-gray-600"></i>
+                            <span class="text-sm font-medium text-gray-900">updated</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <select class="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none">
+                                <option>Create/Update</option>
+                                <option>Create</option>
+                                <option>Update</option>
+                            </select>
+                            <button class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Field Button -->
+                <button id="newFieldBtn" class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:border-gray-400 hover:bg-gray-50 flex items-center justify-center gap-2 mb-6">
+                    <i class="fas fa-plus"></i>
+                    <span>New field</span>
+                </button>
+
+                <!-- Unique Constraints and Indexes -->
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-medium text-gray-900">Unique constraints and indexes (0)</h3>
+                    </div>
+                    <button class="px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:border-gray-400 hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        <span>New index</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- API Rules Tab Content -->
+            <div id="apiRulesTab" class="tab-content hidden">
+                <div class="text-sm text-gray-600 py-8 text-center">
+                    API Rules configuration will be available here
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Field Type Selection Modal -->
+<div id="newFieldModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+    <div class="bg-white rounded-lg shadow-xl border border-gray-300 w-96">
+        <!-- Header -->
+        <div class="bg-gray-100 border-b border-gray-300 px-4 py-3">
+            <h3 class="text-sm font-medium text-gray-900 text-center">+ New field</h3>
+        </div>
+        
+        <!-- Field Types Grid -->
+        <div class="p-4">
+            <div id="fieldTypeGrid" class="grid grid-cols-4 gap-3">
+                @{
+                    var fieldTypes = ViewData["FieldTypes"] as List<genial_dotnet_crm.Models.FieldType>;
+                }
+                @if (fieldTypes != null)
+                {
+                    @foreach (var ft in fieldTypes)
+                    {
+                        <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="@ft.Type">
+                            @if (!string.IsNullOrEmpty(ft.DisplayIcon))
+                            {
+                                <div class="text-2xl font-bold text-gray-700 mb-1">@ft.DisplayIcon</div>
+                            }
+                            else
+                            {
+                                <i class="@ft.Icon text-gray-700 text-xl mb-1"></i>
+                            }
+                            <span class="text-xs text-gray-700 text-center">@ft.Label</span>
+                        </button>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Field Configuration Modal -->
+<div id="fieldConfigModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70]">
+    <div class="bg-white rounded-lg shadow-xl border border-gray-300 w-[600px] max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="bg-gray-100 border-b border-gray-300 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Field Configuration</h3>
+            <button id="closeFieldConfigModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Content -->
+        <div id="fieldConfigModalContent" class="p-6 space-y-6">
+            <!-- Content will be loaded dynamically here -->
+        </div>
+        
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <button id="cancelFieldConfigBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+            </button>
+            <button id="saveFieldConfigBtn" class="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800">
+                Save
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Stage Selection Modal -->
+<div id="stageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-80">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Select Stage</h3>
+            <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-2">
+            @foreach (var stageItem in stagesList)
+            {
+                <form asp-action="UpdateStage" asp-controller="Collections" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="stage" value="@stageItem.Key" />
+                    <button type="submit" class="w-full px-4 py-3 text-left border-2 @(ViewData["Stage"]?.ToString() == stageItem.Key ? "border-black bg-gray-50" : "border-gray-200") rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-gray-900">@stageItem.Label</div>
+                                <div class="text-xs text-gray-500">@stageItem.Description</div>
+                            </div>
+                            <div class="w-8 h-8 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                                <span class="text-gray-700 font-bold text-sm">@stageItem.Letter</span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if we're in edit mode
+        const isEditMode = @(isEditMode ? "true" : "false");
+        const collectionId = '@(ViewData["CollectionId"]?.ToString() ?? "")';
+
+        // Sanitization function for system name
+        function sanitizeSystemName(text) {
+            return text
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Remove accents
+                .replace(/\s+/g, '_')           // Spaces to _
+                .replace(/[^a-z0-9_]/g, '')     // Remove non-alphanumeric except _
+                .replace(/^_+|_+$/g, '');       // Trim _ from start/end
+        }
+
+        const collectionLabelInput = document.getElementById('collectionLabel');
+        const collectionNameInput = document.getElementById('collectionName');
+
+        if (collectionLabelInput && collectionNameInput && !isEditMode) {
+            collectionLabelInput.addEventListener('input', function() {
+                collectionNameInput.value = sanitizeSystemName(this.value);
+            });
+        }
+
+        // Load field types from server
+        const dbFieldTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewData["FieldTypes"]));
+        
+        // Field type helper functions
+        function getFieldType(type) {
+            return dbFieldTypes ? dbFieldTypes.find(ft => ft.Type === type) : null;
+        }
+
+        function renderFieldIcon(type) {
+            const ft = getFieldType(type);
+            if (!ft) return '<i class="fas fa-font text-gray-600"></i>';
+            
+            if (ft.DisplayIcon) {
+                return `<div class="text-xl font-bold text-gray-600 w-5 text-center leading-none">${ft.DisplayIcon}</div>`;
+            }
+            return `<i class="${ft.Icon} text-gray-600"></i>`;
+        }
+
+        function getFieldLabel(type) {
+            const ft = getFieldType(type);
+            return ft ? ft.Label : type;
+        }
+
+        // Global fields list (JSON structure) - single list
+        let fieldsListData = [];
+        
+        // Store field configurations by fieldId
+        let fieldConfigurations = {};
+        
+        // Load collection data if in edit mode
+        @if (Model != null && isEditMode)
+        {
+            <text>
+            const collectionData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+            
+            // Load collection fields into the form
+            function loadCollectionFields(collection) {
+                if (!collection || !collection.Fields) return;
+                
+                const fieldsList = document.getElementById('fieldsList');
+                const createdField = document.getElementById('createdField');
+                
+                // Clear existing custom fields (keep system fields: id, created, updated)
+                const customFields = fieldsList.querySelectorAll('[data-field-type]');
+                customFields.forEach(field => field.remove());
+                
+                // Sort fields by order
+                const sortedFields = [...collection.Fields].sort((a, b) => {
+                    const orderA = (a.Order !== undefined ? a.Order : a.order) || 999;
+                    const orderB = (b.Order !== undefined ? b.Order : b.order) || 999;
+                    return orderA - orderB;
+                });
+                
+                // Add custom fields (skip system fields)
+                sortedFields.forEach(field => {
+                    const fieldName = field.Name || field.name;
+                    const fieldType = field.Type || field.type;
+                    
+                    // Skip system fields (id, created, updated)
+                    if (fieldType === 'system' || fieldName === 'id' || fieldName === 'created' || fieldName === 'updated') {
+                        return;
+                    }
+                    
+                    const iconHtml = renderFieldIcon(fieldType);
+                    const fieldId = `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    const cols = (field.Cols !== undefined ? field.Cols : field.cols) || 12;
+                    const colSpan = cols === 6 ? 'col-span-6' : 'col-span-12';
+                    const selected6 = cols === 6 ? 'selected' : '';
+                    const selected12 = cols === 12 ? 'selected' : '';
+                    
+                    const fieldHtml = `
+                        <div id="${fieldId}" class="${colSpan} flex items-center justify-between p-3 border border-gray-200 rounded-md draggable-field" data-field-type="${fieldType}" data-cols="${cols}" draggable="true">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-grip-vertical text-gray-400 cursor-move hover:text-gray-600 drag-handle"></i>
+                                ${iconHtml}
+                                <input type="text" value="${fieldName}" class="field-name-input text-sm font-medium text-gray-900 border-none bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500 px-1 rounded" style="width: 150px;">
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <select class="field-cols-select px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none" data-field-id="${fieldId}">
+                                    <option value="6" ${selected6}>6 col</option>
+                                    <option value="12" ${selected12}>12 col</option>
+                                </select>
+                                <button class="text-gray-400 hover:text-gray-600" onclick="deleteField('${fieldId}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-gray-600 field-config-btn" data-field-id="${fieldId}" data-field-type="${fieldType}">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = fieldHtml.trim();
+                    const newField = tempDiv.firstChild;
+                    
+                    // Insert before created field
+                    fieldsList.insertBefore(newField, createdField);
+                    
+                    // Store configuration if exists
+                    if (field.Configuration) {
+                        fieldConfigurations[fieldId] = field.Configuration;
+                    }
+                    
+                    // Add event listeners
+                    const nameInput = newField.querySelector('.field-name-input');
+                    if (nameInput) {
+                        nameInput.addEventListener('input', function() {
+                            updateFieldsListJSON();
+                        });
+                    }
+                    
+                    // Add event listener to cols select
+                    const colsSelect = newField.querySelector('.field-cols-select');
+                    if (colsSelect) {
+                        colsSelect.addEventListener('change', function() {
+                            const newCols = parseInt(this.value);
+                            const fieldDiv = document.getElementById(this.getAttribute('data-field-id'));
+                            if (fieldDiv) {
+                                // Update col-span class
+                                fieldDiv.classList.remove('col-span-6', 'col-span-12');
+                                fieldDiv.classList.add(newCols === 6 ? 'col-span-6' : 'col-span-12');
+                                fieldDiv.setAttribute('data-cols', newCols);
+                                // Update JSON
+                                updateFieldsListJSON();
+                            }
+                        });
+                    }
+                    
+                    // Initialize drag and drop
+                    initializeDragAndDropForField(newField);
+                });
+                
+                // Update fields list JSON after loading
+                setTimeout(() => updateFieldsListJSON(), 100);
+            }
+            
+            // Load collection fields on page load
+            if (collectionData) {
+                loadCollectionFields(collectionData);
+            }
+            </text>
+        }
+
+        // Initialize fields list JSON on page load
+        updateFieldsListJSON();
+
+        // Update fields list JSON - reads fields in the exact order they appear on screen
+        function updateFieldsListJSON() {
+            const fieldsList = document.getElementById('fieldsList');
+            const fields = [];
+            
+            // Get all field divs in order (including id, created, updated and custom fields)
+            const allFieldDivs = Array.from(fieldsList.children).filter(child => child.tagName === 'DIV');
+            let order = 0;
+            
+            allFieldDivs.forEach(fieldDiv => {
+                const fieldType = fieldDiv.getAttribute('data-field-type');
+                const fieldId = fieldDiv.id;
+                
+                // System fields (id, created, updated) - don't have data-field-type attribute
+                if (!fieldType) {
+                    // Check if it's id, created, or updated by looking at the content
+                    const fieldNameSpan = fieldDiv.querySelector('span.text-sm.font-medium');
+                    if (fieldNameSpan) {
+                        const fieldName = fieldNameSpan.textContent.trim();
+                        if (fieldName === 'id' || fieldName === 'created' || fieldName === 'updated') {
+                            const fieldData = {
+                                name: fieldName,
+                                type: 'system',
+                                label: fieldName === 'id' ? 'ID' : (fieldName === 'created' ? 'Created' : 'Updated'),
+                                order: order++,
+                                cols: 12 // System fields always 12 cols
+                            };
+                            
+                            // Add configuration if it exists
+                            if (fieldConfigurations[fieldId]) {
+                                fieldData.configuration = fieldConfigurations[fieldId];
+                            }
+                            
+                            fields.push(fieldData);
+                        }
+                    }
+                } else {
+                    // Custom field (has data-field-type)
+                    const nameInput = fieldDiv.querySelector('.field-name-input');
+                    const fieldName = nameInput ? nameInput.value : '';
+                    const colsSelect = fieldDiv.querySelector('.field-cols-select');
+                    const cols = colsSelect ? parseInt(colsSelect.value) : 12;
+                    
+                    const fieldData = {
+                        name: fieldName,
+                        type: fieldType,
+                        label: getFieldLabel(fieldType),
+                        order: order++,
+                        cols: cols
+                    };
+                    
+                    // Add configuration if it exists
+                    if (fieldConfigurations[fieldId]) {
+                        fieldData.configuration = fieldConfigurations[fieldId];
+                    }
+                    
+                    fields.push(fieldData);
+                }
+            });
+            
+            // Update global fields list
+            fieldsListData = fields;
+            
+            // Log updated list
+            console.log('Fields List Updated:', JSON.stringify(fieldsListData, null, 2));
+        }
+
+        // Get all fields from fieldsList as JSON
+        function getFieldsList() {
+            return fieldsListData;
+        }
+
+        // Tab switching
+        document.querySelectorAll('[data-tab]').forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                
+                // Update tab buttons
+                document.querySelectorAll('[data-tab]').forEach(btn => {
+                    btn.classList.remove('text-gray-900', 'border-b-2', 'border-gray-900', '-mb-px');
+                    btn.classList.add('text-gray-600');
+                });
+                this.classList.remove('text-gray-600');
+                this.classList.add('text-gray-900', 'border-b-2', 'border-gray-900', '-mb-px');
+
+                // Update tab content
+                document.getElementById('fieldsTab').classList.add('hidden');
+                document.getElementById('apiRulesTab').classList.add('hidden');
+                document.getElementById(tabName === 'fields' ? 'fieldsTab' : 'apiRulesTab').classList.remove('hidden');
+            });
+        });
+
+        // New Field Modal
+        const newFieldModal = document.getElementById('newFieldModal');
+        const newFieldBtn = document.getElementById('newFieldBtn');
+
+        // Open new field modal
+        newFieldBtn.addEventListener('click', function() {
+            newFieldModal.classList.remove('hidden');
+        });
+
+        // Close new field modal when clicking outside
+        newFieldModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+
+        // Generate field name from type
+        function generateFieldName(fieldType) {
+            const fieldsList = document.getElementById('fieldsList');
+            const fieldCount = Array.from(fieldsList.children).filter(child => child.tagName === 'DIV').length - 2; // Exclude id and created/updated
+            const baseName = fieldType.replace('-', '_');
+            return `${baseName}_${fieldCount + 1}`;
+        }
+
+        // Create field HTML element
+        function createFieldElement(fieldType, cols = 12) {
+            const fieldName = generateFieldName(fieldType);
+            const iconHtml = renderFieldIcon(fieldType);
+            const label = getFieldLabel(fieldType);
+            const fieldId = `field_${Date.now()}`;
+            const colSpan = cols === 6 ? 'col-span-6' : 'col-span-12';
+            const selected6 = cols === 6 ? 'selected' : '';
+            const selected12 = cols === 12 ? 'selected' : '';
+
+            const fieldHtml = `
+                <div id="${fieldId}" class="${colSpan} flex items-center justify-between p-3 border border-gray-200 rounded-md draggable-field" data-field-type="${fieldType}" data-cols="${cols}" draggable="true">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-grip-vertical text-gray-400 cursor-move hover:text-gray-600 drag-handle"></i>
+                        ${iconHtml}
+                        <input type="text" value="${fieldName}" class="field-name-input text-sm font-medium text-gray-900 border-none bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500 px-1 rounded" style="width: 150px;">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select class="field-cols-select px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none" data-field-id="${fieldId}">
+                            <option value="6" ${selected6}>6 col</option>
+                            <option value="12" ${selected12}>12 col</option>
+                        </select>
+                        <button class="text-gray-400 hover:text-gray-600" onclick="deleteField('${fieldId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="text-gray-400 hover:text-gray-600 field-config-btn" data-field-id="${fieldId}" data-field-type="${fieldType}">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return fieldHtml;
+        }
+
+        // Delete field function
+        window.deleteField = function(fieldId) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.remove();
+                // Remove configuration if it exists
+                if (fieldConfigurations[fieldId]) {
+                    delete fieldConfigurations[fieldId];
+                }
+                // Update fields list JSON after deletion
+                updateFieldsListJSON();
+            }
+        };
+
+        // Handle field type selection
+        document.querySelectorAll('.field-type-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const fieldType = this.getAttribute('data-field-type');
+                const fieldsList = document.getElementById('fieldsList');
+                const createdField = document.getElementById('createdField');
+                
+                // Create new field element (default 12 cols)
+                const fieldHtml = createFieldElement(fieldType, 12);
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = fieldHtml.trim();
+                const newField = tempDiv.firstChild;
+                
+                // Insert before created field
+                fieldsList.insertBefore(newField, createdField);
+                
+                // Update fields list JSON after adding new field
+                updateFieldsListJSON();
+                
+                // Add event listener to field name input to update JSON on change
+                const nameInput = newField.querySelector('.field-name-input');
+                if (nameInput) {
+                    nameInput.addEventListener('input', function() {
+                        updateFieldsListJSON();
+                    });
+                }
+                
+                // Add event listener to cols select to update grid layout
+                const colsSelect = newField.querySelector('.field-cols-select');
+                if (colsSelect) {
+                    colsSelect.addEventListener('change', function() {
+                        const newCols = parseInt(this.value);
+                        const fieldDiv = document.getElementById(this.getAttribute('data-field-id'));
+                        if (fieldDiv) {
+                            // Update col-span class
+                            fieldDiv.classList.remove('col-span-6', 'col-span-12');
+                            fieldDiv.classList.add(newCols === 6 ? 'col-span-6' : 'col-span-12');
+                            fieldDiv.setAttribute('data-cols', newCols);
+                            // Update JSON
+                            updateFieldsListJSON();
+                        }
+                    });
+                }
+                
+                // Initialize drag and drop for the new field
+                initializeDragAndDropForField(newField);
+                
+                // Close modal
+                newFieldModal.classList.add('hidden');
+            });
+        });
+
+        // Field Configuration Modal
+        const fieldConfigModal = document.getElementById('fieldConfigModal');
+        const closeFieldConfigModal = document.getElementById('closeFieldConfigModal');
+        const cancelFieldConfigBtn = document.getElementById('cancelFieldConfigBtn');
+        const saveFieldConfigBtn = document.getElementById('saveFieldConfigBtn');
+        let currentConfigFieldId = null;
+
+        // Open field configuration modal
+        async function openFieldConfigModal(fieldId, fieldType) {
+            currentConfigFieldId = fieldId;
+            
+            try {
+                // Fetch dynamic content
+                const response = await fetch(`/Collections/FieldConfig/${fieldType}`);
+                const html = await response.text();
+                const modalContent = document.getElementById('fieldConfigModalContent');
+                modalContent.innerHTML = html;
+                
+                // Execute any scripts in the loaded content
+                const scripts = modalContent.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    Array.from(oldScript.attributes).forEach(attr => {
+                        newScript.setAttribute(attr.name, attr.value);
+                    });
+                    newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                });
+                
+                // Load existing configuration if it exists
+                const existingConfig = fieldConfigurations[fieldId];
+                
+                // After content is loaded, populate it
+                setTimeout(() => {
+                    const inputs = modalContent.querySelectorAll('input, select, textarea');
+                    inputs.forEach(input => {
+                        const name = input.getAttribute('name');
+                        if (existingConfig && existingConfig[name] !== undefined) {
+                            if (input.type === 'checkbox') {
+                                input.checked = existingConfig[name];
+                            } else if (name === 'optionsJson' && existingConfig['options']) {
+                                // Handle select options
+                                const optionsJson = JSON.stringify(existingConfig['options']);
+                                input.value = optionsJson;
+                                // Trigger the load function in the select config script
+                                setTimeout(() => {
+                                    if (typeof window.loadSelectOptions === 'function') {
+                                        window.loadSelectOptions(existingConfig['options']);
+                                    }
+                                }, 150);
+                            } else {
+                                input.value = existingConfig[name] || '';
+                            }
+                        }
+                    });
+                }, 150);
+                
+                fieldConfigModal.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading field config:', error);
+            }
+        }
+
+        // Close field configuration modal
+        function closeFieldConfigModalFunc() {
+            fieldConfigModal.classList.add('hidden');
+            currentConfigFieldId = null;
+        }
+
+        closeFieldConfigModal.addEventListener('click', closeFieldConfigModalFunc);
+        cancelFieldConfigBtn.addEventListener('click', closeFieldConfigModalFunc);
+
+        // Close modal when clicking outside
+        fieldConfigModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeFieldConfigModalFunc();
+            }
+        });
+
+        // Save field configuration
+        saveFieldConfigBtn.addEventListener('click', function() {
+            if (currentConfigFieldId) {
+                const config = {};
+                const inputs = document.getElementById('fieldConfigModalContent').querySelectorAll('input, select, textarea');
+                
+                inputs.forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (!name) return;
+                    
+                    if (input.type === 'checkbox') {
+                        config[name] = input.checked;
+                    } else if (name === 'optionsJson') {
+                        // Handle select options as JSON
+                        try {
+                            const optionsJson = input.value.trim();
+                            if (optionsJson && optionsJson !== '[]') {
+                                config['options'] = JSON.parse(optionsJson);
+                            }
+                        } catch (e) {
+                            console.error('Error parsing options JSON:', e);
+                        }
+                    } else {
+                        const value = input.value.trim();
+                        config[name] = value ? value : null;
+                    }
+                });
+                
+                // Save configuration to fieldConfigurations object
+                fieldConfigurations[currentConfigFieldId] = config;
+                
+                // Update fields list JSON to include the configuration
+                updateFieldsListJSON();
+                
+                console.log('Field Configuration saved for', currentConfigFieldId, ':', JSON.stringify(config, null, 2));
+                
+                closeFieldConfigModalFunc();
+            }
+        });
+
+        // Use event delegation for all config buttons (static and dynamic)
+        document.addEventListener('click', function(e) {
+            // Check if clicked element is a cog icon or its parent button
+            const cogIcon = e.target.closest('.fa-cog');
+            if (cogIcon) {
+                const configBtn = cogIcon.closest('button');
+                if (configBtn) {
+                    // Check if it's a field-config-btn (dynamic field)
+                    if (configBtn.classList.contains('field-config-btn')) {
+                        const fieldType = configBtn.getAttribute('data-field-type');
+                        const fieldId = configBtn.getAttribute('data-field-id');
+                        openFieldConfigModal(fieldId, fieldType);
+                    }
+                    // For static fields (id, created, updated), check parent div
+                    else {
+                        const fieldDiv = configBtn.closest('[data-field-type]');
+                        if (fieldDiv) {
+                            const fieldType = fieldDiv.getAttribute('data-field-type');
+                            openFieldConfigModal(fieldDiv.id, fieldType);
+                        }
+                    }
+                }
+            }
+        });
+
+        // Drag and Drop functionality
+        let draggedElement = null;
+
+        // Initialize drag and drop for a single field
+        function initializeDragAndDropForField(field) {
+            field.addEventListener('dragstart', function(e) {
+                draggedElement = this;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.outerHTML);
+                this.style.opacity = '0.5';
+            });
+
+            field.addEventListener('dragend', function(e) {
+                this.style.opacity = '1';
+                // Remove all drag-over classes
+                const fieldsList = document.getElementById('fieldsList');
+                const allFields = fieldsList.querySelectorAll('.draggable-field');
+                allFields.forEach(f => f.classList.remove('drag-over'));
+            });
+
+            field.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                // Remove drag-over from all fields
+                const fieldsList = document.getElementById('fieldsList');
+                const allFields = fieldsList.querySelectorAll('.draggable-field');
+                allFields.forEach(f => f.classList.remove('drag-over'));
+                
+                // Add drag-over to current field if it's not the dragged element
+                if (this !== draggedElement) {
+                    this.classList.add('drag-over');
+                }
+            });
+
+            field.addEventListener('dragleave', function(e) {
+                this.classList.remove('drag-over');
+            });
+
+            field.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                
+                if (draggedElement && draggedElement !== this) {
+                    const fieldsList = document.getElementById('fieldsList');
+                    const allFields = Array.from(fieldsList.querySelectorAll('.draggable-field'));
+                    const draggedIndex = allFields.indexOf(draggedElement);
+                    const targetIndex = allFields.indexOf(this);
+                    
+                    // Move the element
+                    if (draggedIndex < targetIndex) {
+                        fieldsList.insertBefore(draggedElement, this.nextSibling);
+                    } else {
+                        fieldsList.insertBefore(draggedElement, this);
+                    }
+                    
+                    // Update fields list JSON after reordering
+                    updateFieldsListJSON();
+                }
+            });
+        }
+
+        // Initialize drag and drop for all existing draggable fields
+        function initializeDragAndDrop() {
+            const fieldsList = document.getElementById('fieldsList');
+            const draggableFields = fieldsList.querySelectorAll('.draggable-field');
+            draggableFields.forEach(field => {
+                initializeDragAndDropForField(field);
+            });
+        }
+
+        // Initialize drag and drop on page load
+        initializeDragAndDrop();
+
+        // Stage Selection Logic
+        const stageSelector = document.getElementById('stageSelector');
+        const stageModal = document.getElementById('stageModal');
+        const closeModal = document.getElementById('closeModal');
+
+        if (stageSelector && stageModal) {
+            stageSelector.addEventListener('click', function() {
+                stageModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeModal && stageModal) {
+            closeModal.addEventListener('click', function() {
+                stageModal.classList.add('hidden');
+            });
+        }
+
+        if (stageModal) {
+            stageModal.addEventListener('click', function(e) {
+                if (e.target === stageModal) {
+                    stageModal.classList.add('hidden');
+                }
+            });
+        }
+
+        // Create or Update collection
+        const createCollectionBtn = document.getElementById('createCollectionBtn');
+        if (createCollectionBtn) {
+            createCollectionBtn.addEventListener('click', async function() {
+                const collectionLabel = document.getElementById('collectionLabel').value;
+                const collectionName = document.getElementById('collectionName').value;
+                if (!collectionLabel || !collectionName) {
+                    alert('Label and System Name are required');
+                    return;
+                }
+                
+                // Get all fields as JSON
+                const fieldsData = getFieldsList();
+                
+                // Get collection type
+                const typeSelect = document.getElementById('collectionType');
+                const collectionType = typeSelect ? typeSelect.value : 'Base';
+                
+                // Prepare request data
+                const requestData = {
+                    name: collectionName,
+                    label: collectionLabel,
+                    type: collectionType,
+                    fields: fieldsData
+                };
+                
+                try {
+                    let url, method;
+                    if (isEditMode && collectionId) {
+                        // Update existing collection - REST: PUT /Collections/{id}
+                        url = `/Collections/${collectionId}`;
+                        method = 'PUT';
+                    } else {
+                        // Create new collection - REST: POST /Collections
+                        url = '/Collections';
+                        method = 'POST';
+                    }
+                    
+                    // Send request to server
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        if (isEditMode) {
+                            // For updates, show success message and stay on the same page
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'Collection updated successfully!',
+                                confirmButtonColor: '#000',
+                                timer: 2000,
+                                showConfirmButton: false,
+                                toast: true,
+                                position: 'top-end'
+                            });
+                        } else {
+                            // For new collections, redirect to index after showing success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: 'Collection created successfully!',
+                                confirmButtonColor: '#000'
+                            }).then(() => {
+                                window.location.href = '@Url.Action("Index", "Collections")';
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: result.message,
+                            confirmButtonColor: '#000'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error saving collection:', error);
+                    alert('Error saving collection. Please try again.');
+                }
+            });
+        }
+
+        // Delete collection
+        const deleteCollectionBtn = document.getElementById('deleteCollectionBtn');
+        if (deleteCollectionBtn) {
+            deleteCollectionBtn.addEventListener('click', async function() {
+                const collectionName = '@(Model?.Name ?? "")';
+                const collectionId = '@(ViewData["CollectionId"]?.ToString() ?? "")';
+                
+                if (!collectionId) {
+                    alert('Collection ID not found');
+                    return;
+                }
+
+                // Show SweetAlert2 with input
+                const { value: inputValue } = await Swal.fire({
+                    title: 'Delete Collection',
+                    text: `To confirm deletion, please type the collection name: "${collectionName}"`,
+                    input: 'text',
+                    inputLabel: 'Collection Name',
+                    inputPlaceholder: 'Type the collection name',
+                    showCancelButton: true,
+                    confirmButtonText: 'Delete',
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonText: 'Cancel',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You need to type the collection name!';
+                        }
+                        if (value !== collectionName) {
+                            return 'The name does not match!';
+                        }
+                    }
+                });
+
+                if (inputValue === collectionName) {
+                    try {
+                        // Send DELETE request
+                        const response = await fetch(`/Collections/${collectionId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: 'Collection has been deleted.',
+                                confirmButtonText: 'OK'
+                            });
+                            // Redirect to collections index
+                            window.location.href = '@Url.Action("Index", "Collections")';
+                        } else {
+                            await Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: result.message || 'Error deleting collection',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error deleting collection:', error);
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error deleting collection. Please try again.',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+<style>
+    .drag-over {
+        border-top: 2px solid #3b82f6;
+        border-top-style: dashed;
+    }
+    .draggable-field {
+        transition: opacity 0.2s;
+    }
+    .draggable-field:active {
+        cursor: grabbing;
+    }
+    .drag-handle {
+        user-select: none;
+    }
+</style>
+

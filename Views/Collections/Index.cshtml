@@ -1,0 +1,830 @@
+@model List<genial_dotnet_crm.Models.Collection>
+@{
+    ViewData["Title"] = "Collections";
+    Layout = "_DashboardLayout";
+    var selectedCollection = ViewData["SelectedCollection"] as genial_dotnet_crm.Models.Collection;
+    var stagesList = ViewData["Stages"] as List<genial_dotnet_crm.Models.Stage> ?? new List<genial_dotnet_crm.Models.Stage>();
+}
+@Html.AntiForgeryToken()
+
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-16 bg-gray-50 border-r border-gray-200 flex flex-col">
+        <!-- Top Section with Icons -->
+        <div class="flex flex-col h-full">
+            <div class="p-3 border-b border-gray-200">
+                <div class="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                    PB
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-center py-4 gap-4">
+                <!-- Collections -->
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100">
+                        <i class="fas fa-database text-gray-700"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Collections
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+                <!-- Logs -->
+                <a asp-action="Logs" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-chart-line text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Logs
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Settings -->
+                <a asp-action="Settings" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-code text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Settings
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Stage Selector -->
+            <div class="mt-auto p-3 border-t border-gray-200">
+                <div class="relative group">
+                    <div id="stageSelector" class="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 hover:border-gray-400 transition-colors">
+                        @{
+                            var currentStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                            var currentStageObj = stagesList.FirstOrDefault(s => s.Key == currentStageKey);
+                        }
+                        <span id="stageLetter" class="text-gray-700 font-bold text-sm">@(currentStageObj?.Letter ?? "H")</span>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <span id="stageTooltip">@(currentStageObj?.Label ?? "HML")</span>
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom User Avatar -->
+            <div class="p-3">
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-medium cursor-pointer">
+                        @(ViewData["UserEmail"]?.ToString()?.Substring(0, 1).ToUpper() ?? "T")
+                    </div>
+                    <!-- User Menu Dropdown -->
+                    <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="py-2">
+                            <!-- User Email -->
+                            <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                                @(ViewData["UserEmail"]?.ToString() ?? "")
+                            </div>
+                            <!-- Manage Superusers -->
+                            <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-shield-alt w-5 text-gray-600"></i>
+                                <span class="ml-3">Manage superusers</span>
+                            </a>
+                            <!-- Logout -->
+                            <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
+                                    <i class="fas fa-sign-out-alt w-5 text-gray-600"></i>
+                                    <span class="ml-3">Sair</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collections Panel -->
+    <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4 border-b border-gray-200">
+            <input 
+                type="text" 
+                placeholder="Search collections..." 
+                class="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-3">
+            @{
+                var collectionsList = ViewData["Collections"] as List<genial_dotnet_crm.Models.Collection> ?? Model;
+            }
+            @if (collectionsList != null && collectionsList.Any())
+            {
+                @foreach (var collection in collectionsList)
+                {
+                    <div class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 mb-1 collection-item" data-collection-id="@collection.Id" onclick="window.location.href='@Url.Action("Collection", "Collections", new { id = collection.Id })'">
+                        <i class="fas fa-folder text-gray-600"></i>
+                        <span class="text-sm text-gray-700">@(string.IsNullOrEmpty(collection.Label) ? collection.Name : collection.Label)</span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="px-3 py-2 text-sm text-gray-500 text-center">
+                    No collections found
+                </div>
+            }
+
+            <div class="px-3 mt-4">
+                <a asp-action="NewCollection" asp-controller="Collections" class="w-full px-4 py-2 bg-white border-2 border-gray-900 rounded-md font-medium text-sm hover:bg-gray-50 flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span>New collection</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <div class="bg-white px-8 py-5 border-b border-gray-200 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                @{
+                    var breadcrumbStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                    var breadcrumbStageObj = stagesList.FirstOrDefault(s => s.Key == breadcrumbStageKey);
+                }
+                <span class="text-gray-400 text-base">@(breadcrumbStageObj?.Label ?? "HML")</span>
+                <span class="text-gray-400 text-base">/</span>
+                <span class="text-gray-400 text-base">Collections</span>
+                @if (selectedCollection != null)
+                {
+                    <span class="text-gray-400 text-base">/</span>
+                    <strong class="text-gray-900 text-base">@(string.IsNullOrEmpty(selectedCollection.Label) ? selectedCollection.Name : selectedCollection.Label)</strong>
+                    <a href="@Url.Action("Edit", "Collections", new { id = selectedCollection.Id })" class="fas fa-cog text-gray-400 cursor-pointer hover:text-gray-600 text-base ml-2"></a>
+                    <i class="fas fa-sync-alt text-gray-400 cursor-pointer hover:text-gray-600 text-base"></i>
+                }
+            </div>
+            @if (selectedCollection != null)
+            {
+                <div class="flex gap-3">
+                    <button class="px-4 py-2 border border-gray-200 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+                        <i class="fas fa-code text-gray-600"></i>
+                        <span>API Preview</span>
+                    </button>
+                    <a href="@Url.Action("NewRecord", "Collections", new { id = selectedCollection.Id })" class="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800 flex items-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        <span>New record</span>
+                    </a>
+                </div>
+            }
+        </div>
+
+        @if (selectedCollection != null)
+        {
+            <!-- Search Bar -->
+            <div class="px-8 py-5 bg-gray-50 border-b border-gray-200">
+                <input 
+                    type="text" 
+                    placeholder="Search term or filter like created > '2022-01-01'..." 
+                    class="w-full px-4 py-2 bg-white border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+            </div>
+
+            <!-- Table -->
+            <div class="flex-1 overflow-auto bg-white">
+                <table class="w-full" id="recordsTable">
+                    <thead class="bg-gray-50 border-b border-gray-200 sticky top-0" id="tableHead">
+                        <tr>
+                            <th class="px-4 py-3 text-left">
+                                <input type="checkbox" class="w-4 h-4 cursor-pointer">
+                            </th>
+                            <!-- Columns will be dynamically inserted here -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rows will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-8 py-4 bg-white border-t border-gray-200 text-xs text-gray-500" id="tableFooter">
+                Total found: 0 | Docs
+            </div>
+        }
+        else
+        {
+            <!-- Empty State -->
+            <div class="flex-1 flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                    <i class="fas fa-database text-gray-300 text-4xl"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">Nenhuma coleção selecionada</h2>
+                <p class="text-gray-500 max-w-sm">
+                    Selecione uma coleção na barra lateral esquerda para gerenciar seus registros ou crie uma nova coleção para começar.
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Edit Collection Modal -->
+<div id="editCollectionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 id="editCollectionModalTitle" class="text-xl font-semibold text-gray-900">Edit collection</h2>
+        </div>
+
+        <!-- Form Content -->
+        <div class="px-6 py-4">
+            <!-- Name and Type -->
+            <div class="flex gap-4 mb-6">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Name <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="editCollectionName"
+                        placeholder="eg. 'posts'" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Type
+                    </label>
+                    <select id="editCollectionType" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Base">Base</option>
+                        <option value="Auth">Auth</option>
+                        <option value="View">View</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-4">
+                <div class="flex gap-1">
+                    <button class="px-4 py-2 text-sm font-medium text-gray-900 border-b-2 border-gray-900 -mb-px" data-tab="edit-fields">
+                        Fields
+                    </button>
+                    <button class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900" data-tab="edit-api-rules">
+                        API Rules
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fields Tab Content -->
+            <div id="editFieldsTab" class="tab-content">
+                <!-- Default Fields -->
+                <div id="editFieldsList" class="space-y-2 mb-4">
+                    <!-- Fields will be dynamically inserted here -->
+                </div>
+
+                <!-- New Field Button -->
+                <button id="editNewFieldBtn" class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:border-gray-400 hover:bg-gray-50 flex items-center justify-center gap-2 mb-6">
+                    <i class="fas fa-plus"></i>
+                    <span>New field</span>
+                </button>
+
+                <!-- Unique Constraints and Indexes -->
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-medium text-gray-900">Unique constraints and indexes (0)</h3>
+                    </div>
+                    <button class="px-4 py-2 border-2 border-dashed border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:border-gray-400 hover:bg-gray-50 flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i>
+                        <span>New index</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- API Rules Tab Content -->
+            <div id="editApiRulesTab" class="tab-content hidden">
+                <div class="text-sm text-gray-600 py-8 text-center">
+                    API Rules configuration will be available here
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <button id="cancelEditCollectionBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+            </button>
+            <button id="updateCollectionBtn" class="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800">
+                Update
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- New Field Type Selection Modal -->
+<div id="newFieldModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+    <div class="bg-white rounded-lg shadow-xl border border-gray-300 w-96">
+        <!-- Header -->
+        <div class="bg-gray-100 border-b border-gray-300 px-4 py-3">
+            <h3 class="text-sm font-medium text-gray-900 text-center">+ New field</h3>
+        </div>
+        
+        <!-- Field Types Grid -->
+        <div class="p-4">
+            <div class="grid grid-cols-4 gap-3">
+                <!-- Plain text -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="plain-text">
+                    <div class="text-2xl font-bold text-gray-700 mb-1">T</div>
+                    <span class="text-xs text-gray-700 text-center">Plain text</span>
+                </button>
+                
+                <!-- Rich editor -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="rich-editor">
+                    <i class="fas fa-pen text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Rich editor</span>
+                </button>
+                
+                <!-- Number -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="number">
+                    <div class="text-2xl font-bold text-gray-700 mb-1">#</div>
+                    <span class="text-xs text-gray-700 text-center">Number</span>
+                </button>
+                
+                <!-- Bool -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="bool">
+                    <i class="fas fa-eye text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Bool</span>
+                </button>
+                
+                <!-- Email -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="email">
+                    <i class="fas fa-envelope text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Email</span>
+                </button>
+                
+                <!-- URL -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="url">
+                    <i class="fas fa-link text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">URL</span>
+                </button>
+                
+                <!-- Datetime -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="datetime">
+                    <i class="fas fa-calendar text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Datetime</span>
+                </button>
+                
+                <!-- Autodate -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="autodate">
+                    <i class="fas fa-calendar-check text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Autodate</span>
+                </button>
+                
+                <!-- Select -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="select">
+                    <i class="fas fa-list text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Select</span>
+                </button>
+                
+                <!-- File -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="file">
+                    <i class="fas fa-image text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">File</span>
+                </button>
+                
+                <!-- Relation -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="relation">
+                    <i class="fas fa-project-diagram text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Relation</span>
+                </button>
+                
+                <!-- JSON -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors" data-field-type="json">
+                    <div class="text-lg font-bold text-gray-700 mb-1">{}</div>
+                    <span class="text-xs text-gray-700 text-center">JSON</span>
+                </button>
+                
+                <!-- Geo Point -->
+                <button class="field-type-btn flex flex-col items-center justify-center p-3 border border-gray-200 rounded hover:border-gray-400 hover:bg-gray-50 transition-colors col-span-4" data-field-type="geo-point">
+                    <i class="fas fa-map-marker-alt text-gray-700 text-xl mb-1"></i>
+                    <span class="text-xs text-gray-700 text-center">Geo Point</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stage Selection Modal -->
+<div id="stageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-80">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Select Stage</h3>
+            <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-2">
+            @foreach (var stageItem in stagesList)
+            {
+                <form asp-action="UpdateStage" asp-controller="Collections" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="stage" value="@stageItem.Key" />
+                    <button type="submit" class="w-full px-4 py-3 text-left border-2 @(ViewData["Stage"]?.ToString() == stageItem.Key ? "border-black bg-gray-50" : "border-gray-200") rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-gray-900">@stageItem.Label</div>
+                                <div class="text-xs text-gray-500">@stageItem.Description</div>
+                            </div>
+                            <div class="w-8 h-8 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                                <span class="text-gray-700 font-bold text-sm">@stageItem.Letter</span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+        // Load field types from server
+        const dbFieldTypes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewData["FieldTypes"]));
+        
+        // Field type helper functions
+        function getFieldType(type) {
+            return dbFieldTypes ? dbFieldTypes.find(ft => ft.Type === type) : null;
+        }
+
+        function getFieldIcon(type) {
+            const ft = getFieldType(type);
+            return ft ? ft.Icon : 'fas fa-font';
+        }
+
+        // Current collection data (if editing)
+        let currentEditingCollectionId = null;
+        @if (selectedCollection != null)
+        {
+            <text>
+            const currentCollectionData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(selectedCollection));
+            </text>
+        }
+        else
+        {
+            <text>
+            const currentCollectionData = null;
+            </text>
+        }
+
+        // Stage configuration
+        const stages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((List<genial_dotnet_crm.Models.Stage>)ViewData["Stages"]).ToDictionary(s => s.Key, s => new { letter = s.Letter, name = s.Label })));
+
+        // Get current stage from server (session)
+        const currentStage = '@ViewData["Stage"]' || 'hml';
+
+        // Update stage display
+        function updateStageDisplay(stage) {
+            const stageData = stages[stage];
+            if (stageData) {
+                document.getElementById('stageLetter').textContent = stageData.letter;
+                document.getElementById('stageTooltip').textContent = stageData.name;
+            }
+        }
+
+        // Initialize stage display
+        updateStageDisplay(currentStage);
+
+        // Open modal
+        document.getElementById('stageSelector').addEventListener('click', function() {
+            document.getElementById('stageModal').classList.remove('hidden');
+        });
+
+        // Close modal
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('stageModal').classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('stageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+
+        // Open edit collection modal - redirect to edit screen for now
+        function openEditCollectionModal(collectionId) {
+            // Redirect to edit screen - REST: /Collections/{id}/Edit
+            window.location.href = `/Collections/${collectionId}/Edit`;
+        }
+
+
+
+        // Function to build table columns from collection fields
+        function buildTableColumns(collection) {
+            const fields = collection.Fields || collection.fields || [];
+            const thead = document.getElementById('tableHead');
+            const tr = thead.querySelector('tr');
+            
+            // Clear existing columns (except checkbox)
+            const checkbox = tr.querySelector('th:first-child');
+            tr.innerHTML = '';
+            tr.appendChild(checkbox);
+            
+            // Separate id field from other fields
+            const idField = fields.find(f => {
+                const fieldName = f.Name || f.name;
+                return fieldName === 'id' || fieldName === '_id';
+            });
+            const otherFields = fields.filter(f => {
+                const fieldName = f.Name || f.name;
+                return fieldName !== 'id' && fieldName !== '_id';
+            });
+            
+            // Sort other fields by order
+            const sortedOtherFields = [...otherFields].sort((a, b) => {
+                const orderA = (a.Order !== undefined ? a.Order : a.order) || 999;
+                const orderB = (b.Order !== undefined ? b.Order : b.order) || 999;
+                return orderA - orderB;
+            });
+            
+            // Add id field first if it exists
+            if (idField) {
+                const fieldName = idField.Name || idField.name;
+                const fieldType = idField.Type || idField.type;
+                const icon = getFieldIcon(fieldType);
+                
+                const th = document.createElement('th');
+                th.className = 'px-4 py-3 text-left text-xs font-semibold text-gray-600';
+                th.innerHTML = `<i class="${icon} mr-1"></i>${fieldName}`;
+                tr.appendChild(th);
+            }
+            
+            // Add column headers for other fields
+            sortedOtherFields.forEach(field => {
+                const fieldName = field.Name || field.name;
+                const fieldType = field.Type || field.type;
+                const icon = getFieldIcon(fieldType);
+                
+                const th = document.createElement('th');
+                th.className = 'px-4 py-3 text-left text-xs font-semibold text-gray-600';
+                th.innerHTML = `<i class="${icon} mr-1"></i>${fieldName}`;
+                tr.appendChild(th);
+            });
+            
+            // Add actions column
+            const actionsTh = document.createElement('th');
+            actionsTh.className = 'px-4 py-3 text-left text-xs font-semibold text-gray-600';
+            actionsTh.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
+            tr.appendChild(actionsTh);
+        }
+
+        // Function to format cell value
+        function formatCellValue(value, fieldType, fieldConfig = null) {
+            if (value === null || value === undefined) {
+                return '<span class="text-gray-500">N/A</span>';
+            }
+            
+            if (fieldType === 'bool') {
+                const boolValue = value === true || value === 'true' || value === 1 || value === '1';
+                const bgClass = boolValue ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600';
+                return `<span class="px-2 py-1 ${bgClass} rounded text-xs font-semibold">${boolValue ? 'True' : 'False'}</span>`;
+            }
+            
+            // Handle select field - display value instead of key
+            if (fieldType === 'select' && fieldConfig && fieldConfig.Configuration && fieldConfig.Configuration.Options) {
+                const options = fieldConfig.Configuration.Options;
+                const option = options.find(opt => {
+                    const optKey = opt.Key || opt.key;
+                    return optKey === value || optKey === value.toString();
+                });
+                if (option) {
+                    return (option.Value || option.value || value).toString();
+                }
+            }
+            
+            if (fieldType === 'datetime' || fieldType === 'autodate' || fieldType === 'created' || fieldType === 'updated') {
+                try {
+                    const date = new Date(value);
+                    if (isNaN(date.getTime())) {
+                        return value.toString();
+                    }
+                    const dateStr = date.toISOString().split('T')[0];
+                    const timeStr = date.toTimeString().split(' ')[0] + ' UTC';
+                    return `<div>${dateStr}</div><div class="text-xs text-gray-400">${timeStr}</div>`;
+                } catch {
+                    return value.toString();
+                }
+            }
+            
+            if (typeof value === 'object') {
+                return '<span class="text-gray-500">[Object]</span>';
+            }
+            
+            return value.toString();
+        }
+
+        // Function to build table rows from records
+        function buildTableRows(records, collection) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            if (!records || records.length === 0) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 100;
+                td.className = 'px-4 py-8 text-center text-gray-500';
+                td.textContent = 'No records found';
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+                return;
+            }
+            
+            const fields = collection.Fields || collection.fields || [];
+            
+            // Separate id field from other fields
+            const idField = fields.find(f => {
+                const fieldName = f.Name || f.name;
+                return fieldName === 'id' || fieldName === '_id';
+            });
+            const otherFields = fields.filter(f => {
+                const fieldName = f.Name || f.name;
+                return fieldName !== 'id' && fieldName !== '_id';
+            });
+            
+            // Sort other fields by order
+            const sortedOtherFields = [...otherFields].sort((a, b) => {
+                const orderA = (a.Order !== undefined ? a.Order : a.order) || 999;
+                const orderB = (b.Order !== undefined ? b.Order : b.order) || 999;
+                return orderA - orderB;
+            });
+            
+            // Combine: id first, then other fields
+            const sortedFields = idField ? [idField, ...sortedOtherFields] : sortedOtherFields;
+            
+            records.forEach(record => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-gray-100 hover:bg-gray-50';
+                
+                // Checkbox column
+                const checkboxTd = document.createElement('td');
+                checkboxTd.className = 'px-4 py-4';
+                checkboxTd.innerHTML = '<input type="checkbox" class="w-4 h-4 cursor-pointer">';
+                tr.appendChild(checkboxTd);
+                
+                // Data columns
+                sortedFields.forEach(field => {
+                    const fieldName = field.Name || field.name;
+                    const fieldType = field.Type || field.type;
+                    
+                    // Look for the value in a case-insensitive way
+                    let value = record[fieldName];
+                    if (value === undefined) {
+                        // Try camelCase (standard for ASP.NET Core JSON)
+                        const camelName = fieldName.charAt(0).toLowerCase() + fieldName.slice(1);
+                        value = record[camelName];
+                    }
+                    if (value === undefined) {
+                        // Try lowercase
+                        value = record[fieldName.toLowerCase()];
+                    }
+                    if (value === undefined) {
+                        // Search all keys case-insensitively as a fallback
+                        const actualKey = Object.keys(record).find(k => k.toLowerCase() === fieldName.toLowerCase());
+                        if (actualKey) value = record[actualKey];
+                    }
+                    
+                    const td = document.createElement('td');
+                    td.className = 'px-4 py-4 text-sm';
+                    
+                    // Special handling for _id field
+                    if (fieldName === 'id' || fieldName === '_id') {
+                        const idValue = record._id || record.id || value;
+                        td.className = 'px-4 py-4 text-blue-600 font-mono text-xs';
+                        td.textContent = idValue ? idValue.toString() : '';
+                    } else {
+                        // Pass field config for select type to get options
+                        td.innerHTML = formatCellValue(value, fieldType, field);
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                // Actions column
+                const actionsTd = document.createElement('td');
+                actionsTd.className = 'px-4 py-4 text-gray-400';
+                actionsTd.textContent = '→';
+                tr.appendChild(actionsTd);
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Function to load records for a collection
+        async function loadCollectionRecords(collection) {
+            if (!collection || !collection.Id && !collection.id) {
+                console.log('No collection selected');
+                return;
+            }
+            
+            const collectionId = collection.Id || collection.id;
+            const stage = '@ViewData["Stage"]' || 'hml';
+            
+            try {
+                // Build table columns first
+                buildTableColumns(collection);
+                
+                // Fetch records
+                const response = await fetch('@Url.Action("GetRecords", "Collections")?collectionId=' + collectionId);
+                const data = await response.json();
+                
+                if (data.success && data.records) {
+                    buildTableRows(data.records, collection);
+                    
+                    // Update footer
+                    const footer = document.getElementById('tableFooter');
+                    if (footer) {
+                        footer.textContent = `Total found: ${data.records.length} | Docs`;
+                    }
+                } else {
+                    console.error('Error loading records:', data.message);
+                    buildTableRows([], collection);
+                    const footer = document.getElementById('tableFooter');
+                    if (footer) {
+                        footer.textContent = 'Total found: 0 | Docs';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading records:', error);
+                buildTableRows([], collection);
+                const footer = document.getElementById('tableFooter');
+                if (footer) {
+                    footer.textContent = 'Total found: 0 | Docs';
+                }
+            }
+        }
+
+        // Load records when collection is selected
+        if (currentCollectionData) {
+            loadCollectionRecords(currentCollectionData);
+        }
+
+        }); // End of DOMContentLoaded
+    </script>
+    <style>
+        .drag-over {
+            border-top: 2px solid #3b82f6;
+            border-top-style: dashed;
+        }
+        .draggable-field {
+            transition: opacity 0.2s;
+        }
+        .draggable-field:active {
+            cursor: grabbing;
+        }
+        .drag-handle {
+            user-select: none;
+        }
+        /* Toggle Switch Styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #2563eb;
+        }
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+        .toggle-switch input:focus + .toggle-slider {
+            box-shadow: 0 0 1px #2563eb;
+        }
+    </style>
+}
+

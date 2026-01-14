@@ -1,0 +1,190 @@
+<!-- Select Options -->
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-2">
+        Options (Key/Value)
+        <i class="fas fa-info-circle text-gray-400 ml-1"></i>
+    </label>
+    <div id="selectOptionsContainer" class="space-y-2">
+        <!-- Options will be added here dynamically -->
+    </div>
+    <button type="button" id="addSelectOptionBtn" class="mt-2 px-3 py-1.5 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+        <i class="fas fa-plus mr-1"></i> Add Option
+    </button>
+    <p class="text-xs text-gray-500 mt-1">Add key/value pairs for the select dropdown</p>
+</div>
+
+<!-- Hidden input to store options as JSON -->
+<input type="hidden" id="selectOptionsJson" name="optionsJson" value="[]">
+
+<!-- Toggle Options -->
+<div class="flex items-center gap-6 pt-4 border-t border-gray-200">
+    <!-- Nonempty Toggle -->
+    <div class="flex items-center gap-2">
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="nonemptyToggle" name="nonempty" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-green-500 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+        </label>
+        <label for="nonemptyToggle" class="text-sm font-medium text-gray-700 cursor-pointer">
+            Nonempty
+            <i class="fas fa-info-circle text-gray-400 ml-1"></i>
+        </label>
+    </div>
+    
+    <!-- Hidden Toggle -->
+    <div class="flex items-center gap-2">
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="hiddenToggle" name="hidden" class="sr-only peer">
+            <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+        </label>
+        <label for="hiddenToggle" class="text-sm font-medium text-gray-700 cursor-pointer">
+            Hidden
+            <i class="fas fa-info-circle text-gray-400 ml-1"></i>
+        </label>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // Wait for DOM to be ready
+        function initSelectOptions() {
+            let optionIndex = 0;
+            const container = document.getElementById('selectOptionsContainer');
+            const addBtn = document.getElementById('addSelectOptionBtn');
+            const hiddenInput = document.getElementById('selectOptionsJson');
+            
+            if (!container || !addBtn || !hiddenInput) {
+                // Retry if elements not found yet
+                setTimeout(initSelectOptions, 50);
+                return;
+            }
+            
+            let options = [];
+
+            // Load existing options if any
+            function loadExistingOptions() {
+                const existingOptionsJson = hiddenInput.value;
+                if (existingOptionsJson && existingOptionsJson !== '[]') {
+                    try {
+                        options = JSON.parse(existingOptionsJson);
+                        options.forEach((opt, index) => {
+                            addOptionRow(opt.key || '', opt.value || '', index);
+                        });
+                    } catch (e) {
+                        console.error('Error parsing options:', e);
+                    }
+                }
+            }
+
+            // Add option row
+            function addOptionRow(key = '', value = '', index = null) {
+                const idx = index !== null ? index : optionIndex++;
+                const row = document.createElement('div');
+                row.className = 'flex gap-2 items-center';
+                row.dataset.index = idx;
+                
+                // Escape values to prevent XSS
+                const escapedKey = (key || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                const escapedValue = (value || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                
+                row.innerHTML = `
+                    <input type="text" 
+                           class="option-key-input flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           placeholder="Key (no spaces/special chars)" 
+                           value="${escapedKey}"
+                           pattern="[a-zA-Z0-9_-]+"
+                           title="Only letters, numbers, underscores and hyphens allowed">
+                    <input type="text" 
+                           class="option-value-input flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           placeholder="Value" 
+                           value="${escapedValue}">
+                    <button type="button" class="remove-option-btn px-2 py-2 text-red-600 hover:text-red-800" title="Remove">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(row);
+
+                // Add event listeners
+                const keyInput = row.querySelector('.option-key-input');
+                const valueInput = row.querySelector('.option-value-input');
+                const removeBtn = row.querySelector('.remove-option-btn');
+
+                if (keyInput) {
+                    // Restrict key input to alphanumeric, underscore and hyphen only
+                    keyInput.addEventListener('input', function(e) {
+                        // Remove spaces and special characters (keep only letters, numbers, underscore, hyphen)
+                        let value = e.target.value;
+                        value = value.replace(/[^a-zA-Z0-9_-]/g, '');
+                        if (e.target.value !== value) {
+                            e.target.value = value;
+                        }
+                        updateOptionsJson();
+                    });
+                    keyInput.addEventListener('keypress', function(e) {
+                        // Prevent spaces and special characters on keypress
+                        const char = String.fromCharCode(e.which);
+                        if (!/[a-zA-Z0-9_-]/.test(char)) {
+                            e.preventDefault();
+                        }
+                    });
+                }
+                if (valueInput) valueInput.addEventListener('input', updateOptionsJson);
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function() {
+                        row.remove();
+                        updateOptionsJson();
+                    });
+                }
+            }
+
+            // Update hidden input with JSON
+            function updateOptionsJson() {
+                options = [];
+                const rows = container.querySelectorAll('[data-index]');
+                rows.forEach(row => {
+                    const keyInput = row.querySelector('.option-key-input');
+                    const valueInput = row.querySelector('.option-value-input');
+                    if (keyInput && valueInput) {
+                        const key = keyInput.value.trim();
+                        const value = valueInput.value.trim();
+                        if (key || value) {
+                            options.push({ key: key, value: value });
+                        }
+                    }
+                });
+                hiddenInput.value = JSON.stringify(options);
+            }
+
+            // Add button click - use event delegation to ensure it works
+            addBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                addOptionRow();
+            });
+
+            // Load existing options
+            loadExistingOptions();
+
+            // Expose function to load options from outside
+            window.loadSelectOptions = function(opts) {
+                if (!container || !hiddenInput) return;
+                container.innerHTML = '';
+                optionIndex = 0;
+                options = [];
+                if (opts && Array.isArray(opts)) {
+                    opts.forEach(opt => {
+                        addOptionRow(opt.key || '', opt.value || '');
+                    });
+                }
+                updateOptionsJson();
+            };
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSelectOptions);
+        } else {
+            // DOM already ready, but wait a bit for dynamic content
+            setTimeout(initSelectOptions, 100);
+        }
+    })();
+</script>

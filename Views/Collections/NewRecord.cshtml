@@ -1,0 +1,409 @@
+@using genial_dotnet_crm.Models
+@model Collection
+@{
+    ViewData["Title"] = "New Record";
+    Layout = "_DashboardLayout";
+    var stagesList = ViewData["Stages"] as List<Stage> ?? new List<Stage>();
+}
+@Html.AntiForgeryToken()
+
+<!-- jQuery (required for Summernote) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap CSS (required for Summernote) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Summernote CSS -->
+<link href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.css" rel="stylesheet">
+<!-- Toggle Switch CSS -->
+<link href="~/css/toggle-switch.css" rel="stylesheet">
+<!-- Bootstrap JS (required for Summernote) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Summernote JS -->
+<script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs4.min.js"></script>
+<!-- New Record JS Configuration -->
+<script>
+    // Define configuration variables from server
+    window.newRecordConfig = {
+        stages: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((List<Stage>)(ViewData["Stages"] ?? new List<Stage>())).ToDictionary(s => s.Key, s => new { letter = s.Letter, name = s.Label }))),
+        currentStage: '@ViewData["Stage"]' || 'hml'
+    };
+</script>
+<!-- New Record JS -->
+<script src="~/js/new-record.js"></script>
+
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div class="w-16 bg-gray-50 border-r border-gray-200 flex flex-col">
+        <!-- Top Section with Icons -->
+        <div class="flex flex-col h-full">
+            <div class="p-3 border-b border-gray-200">
+                <div class="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                    PB
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-center py-4 gap-4">
+                <!-- Collections -->
+                <a asp-action="Index" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100">
+                        <i class="fas fa-database text-gray-700"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Collections
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Logs -->
+                <a asp-action="Logs" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-chart-line text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Logs
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Settings -->
+                <a asp-action="Settings" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-code text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Settings
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Stage Selector -->
+            <div class="mt-auto p-3 border-t border-gray-200">
+                <div class="relative group">
+                    <div id="stageSelector" class="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 hover:border-gray-400 transition-colors">
+                        @{
+                            var currentStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                            var currentStageObj = stagesList.FirstOrDefault(s => s.Key == currentStageKey);
+                        }
+                        <span id="stageLetter" class="text-gray-700 font-bold text-sm">@(currentStageObj?.Letter ?? "H")</span>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <span id="stageTooltip">@(currentStageObj?.Label ?? "HML")</span>
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom User Avatar -->
+            <div class="p-3">
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-medium cursor-pointer">
+                        @(ViewData["UserEmail"]?.ToString()?.Substring(0, 1).ToUpper() ?? "T")
+                    </div>
+                    <!-- User Menu Dropdown -->
+                    <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="py-2">
+                            <!-- User Email -->
+                            <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                                @(ViewData["UserEmail"]?.ToString() ?? "")
+                            </div>
+                            <!-- Manage Superusers -->
+                            <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-shield-alt w-5 text-gray-600"></i>
+                                <span class="ml-3">Manage superusers</span>
+                            </a>
+                            <!-- Logout -->
+                            <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
+                                    <i class="fas fa-sign-out-alt w-5 text-gray-600"></i>
+                                    <span class="ml-3">Sair</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collections Panel -->
+    <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div class="p-4 border-b border-gray-200">
+            <input 
+                type="text" 
+                placeholder="Search collections..." 
+                class="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-3">
+            @{
+                var collectionsList = ViewData["Collections"] as List<Collection> ?? new List<Collection>();
+            }
+            @if (collectionsList != null && collectionsList.Any())
+            {
+                @foreach (var collection in collectionsList)
+                {
+                    <div class="px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 flex items-center gap-3 mb-1 collection-item" data-collection-id="@collection.Id" onclick="window.location.href='@Url.Action("Collection", "Collections", new { id = collection.Id })'">
+                        <i class="fas fa-folder text-gray-600"></i>
+                        <span class="text-sm text-gray-700">@(string.IsNullOrEmpty(collection.Label) ? collection.Name : collection.Label)</span>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="px-3 py-2 text-sm text-gray-500 text-center">
+                    No collections found
+                </div>
+            }
+
+            <div class="px-3 mt-4">
+                <a asp-action="NewCollection" asp-controller="Collections" class="w-full px-4 py-2 bg-white border-2 border-gray-900 rounded-md font-medium text-sm hover:bg-gray-50 flex items-center justify-center gap-2">
+                    <i class="fas fa-plus"></i>
+                    <span>New collection</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-white">
+        <!-- Header -->
+        <div class="bg-white px-8 py-3 border-b border-gray-200 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                @{
+                    var breadcrumbStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                    var breadcrumbStageObj = stagesList.FirstOrDefault(s => s.Key == breadcrumbStageKey);
+                }
+                <span class="text-gray-400 text-base">@(breadcrumbStageObj?.Label ?? "HML")</span>
+                <span class="text-gray-400 text-base">/</span>
+                <a asp-action="Collection" asp-controller="Collections" asp-route-id="@Model.Id" class="text-gray-400 text-base hover:text-gray-600">Collections</a>
+                <span class="text-gray-400 text-base">/</span>
+                <a asp-action="Collection" asp-controller="Collections" asp-route-id="@Model.Id" class="text-gray-400 text-base hover:text-gray-600">@(string.IsNullOrEmpty(Model.Label) ? Model.Name : Model.Label)</a>
+                <span class="text-gray-400 text-base">/</span>
+                <strong class="text-gray-900 text-base">New record</strong>
+            </div>
+            <div class="flex gap-3">
+                <a asp-action="Collection" asp-controller="Collections" asp-route-id="@Model.Id" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </a>
+                <button type="submit" form="newRecordForm" id="createRecordBtn" class="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800">
+                    Create
+                </button>
+            </div>
+        </div>
+
+        <!-- Form Content -->
+        <div class="flex-1 overflow-y-auto px-8 py-6">
+            <form id="newRecordForm" method="post" asp-action="CreateRecord" asp-controller="Collections" class="max-w-2xl">
+                <input type="hidden" name="collectionId" value="@Model.Id" />
+                <!-- Fields rendered directly from server -->
+                @{
+                    var filteredFields = ViewData["FilteredFields"] as List<CollectionField> ?? new List<CollectionField>();
+                }
+                
+                @if (filteredFields.Any())
+                {
+                    @foreach (var field in filteredFields)
+                    {
+                        var fieldId = $"record_field_{field.Name}";
+                        var fieldName = field.Name;
+                        var label = field.Name;
+                        var fieldTypeEnum = FieldTypeEnumExtensions.FromString(field.Type);
+                        var config = field.Configuration ?? new FieldConfiguration();
+                        
+                        @if (fieldTypeEnum == FieldTypeEnum.Bool)
+                        {
+                            <div class="mb-4">
+                                <div class="flex items-center justify-between">
+                                    <label for="@fieldId" class="block text-sm font-medium text-gray-700">
+                                        @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                    </label>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="@fieldId" name="@fieldName" @(config.Nonempty ? "required" : "")>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.RichEditor)
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <textarea id="@fieldId" name="@fieldName" class="rich-editor-field" @(config.Nonempty ? "required" : "")></textarea>
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.Number)
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <input type="number" 
+                                       id="@fieldId" 
+                                       name="@fieldName" 
+                                       step="any" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                       @(config.Nonempty ? "required" : "") 
+                                       @(!string.IsNullOrEmpty(config.MinLength) ? $"min=\"{config.MinLength}\"" : "") 
+                                       @(!string.IsNullOrEmpty(config.MaxLength) ? $"max=\"{config.MaxLength}\"" : "") 
+                                       oninput="this.value = this.value.replace(/[^0-9.-]/g, '')">
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.Email)
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <input type="email" 
+                                       id="@fieldId" 
+                                       name="@fieldName" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                       @(config.Nonempty ? "required" : "") 
+                                       @(!string.IsNullOrEmpty(config.MinLength) ? $"minlength=\"{config.MinLength}\"" : "") 
+                                       @(!string.IsNullOrEmpty(config.MaxLength) ? $"maxlength=\"{config.MaxLength}\"" : "") 
+                                       @(!string.IsNullOrEmpty(config.ValidationPattern) ? $"pattern=\"{config.ValidationPattern}\"" : "")>
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.Url)
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <input type="url" 
+                                       id="@fieldId" 
+                                       name="@fieldName" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                       @(config.Nonempty ? "required" : "") 
+                                       @(!string.IsNullOrEmpty(config.MinLength) ? $"minlength=\"{config.MinLength}\"" : "") 
+                                       @(!string.IsNullOrEmpty(config.MaxLength) ? $"maxlength=\"{config.MaxLength}\"" : "") 
+                                       @(!string.IsNullOrEmpty(config.ValidationPattern) ? $"pattern=\"{config.ValidationPattern}\"" : "")>
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.DateTime)
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <input type="datetime-local" 
+                                       id="@fieldId" 
+                                       name="@fieldName" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                       @(config.Nonempty ? "required" : "")>
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.Autodate)
+                        {
+                            var now = DateTime.Now;
+                            var localDateTime = now.ToString("yyyy-MM-ddTHH:mm");
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <input type="datetime-local" 
+                                       id="@fieldId" 
+                                       name="@fieldName" 
+                                       value="@localDateTime"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100" 
+                                       readonly>
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.Json)
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <textarea id="@fieldId" 
+                                          name="@fieldName" 
+                                          rows="4" 
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                          @(config.Nonempty ? "required" : "") 
+                                          placeholder='{"key": "value"}'></textarea>
+                            </div>
+                        }
+                        else if (fieldTypeEnum == FieldTypeEnum.Select)
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <select id="@fieldId" 
+                                        name="@fieldName" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                        @(config.Nonempty ? "required" : "")>
+                                    <option value="">-- Select an option --</option>
+                                    @if (config.Options != null && config.Options.Any())
+                                    {
+                                        @foreach (var option in config.Options)
+                                        {
+                                            <option value="@option.Key">@option.Value</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-4">
+                                <label for="@fieldId" class="block text-sm font-medium text-gray-700 mb-2">
+                                    @label @if (config.Nonempty) { <span class="text-red-500">*</span> }
+                                </label>
+                                <input type="text" 
+                                       id="@fieldId" 
+                                       name="@fieldName" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                                       @(config.Nonempty ? "required" : "") 
+                                       @(!string.IsNullOrEmpty(config.MinLength) ? $"minlength=\"{config.MinLength}\"" : "") 
+                                       @(!string.IsNullOrEmpty(config.MaxLength) ? $"maxlength=\"{config.MaxLength}\"" : "") 
+                                       @(!string.IsNullOrEmpty(config.ValidationPattern) ? $"pattern=\"{config.ValidationPattern}\"" : "")>
+                            </div>
+                        }
+                    }
+                }
+                else
+                {
+                    <p class="text-gray-500 text-sm">No fields available for this collection.</p>
+                }
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Stage Selection Modal -->
+<div id="stageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-80">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Select Stage</h3>
+            <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-2">
+            @foreach (var stageItem in stagesList)
+            {
+                <form asp-action="UpdateStage" asp-controller="Collections" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="stage" value="@stageItem.Key" />
+                    <button type="submit" class="w-full px-4 py-3 text-left border-2 @(ViewData["Stage"]?.ToString() == stageItem.Key ? "border-black bg-gray-50" : "border-gray-200") rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-gray-900">@stageItem.Label</div>
+                                <div class="text-xs text-gray-500">@stageItem.Description</div>
+                            </div>
+                            <div class="w-8 h-8 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                                <span class="text-gray-700 font-bold text-sm">@stageItem.Letter</span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+
+

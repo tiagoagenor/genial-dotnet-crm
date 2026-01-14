@@ -1,0 +1,404 @@
+@{
+    ViewData["Title"] = "Logs";
+    Layout = "_DashboardLayout";
+    var stagesList = ViewData["Stages"] as List<genial_dotnet_crm.Models.Stage> ?? new List<genial_dotnet_crm.Models.Stage>();
+}
+@Html.AntiForgeryToken()
+
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <div class="w-16 bg-gray-50 border-r border-gray-200 flex flex-col">
+        <div class="flex flex-col h-full">
+            <div class="p-3 border-b border-gray-200">
+                <div class="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                    PB
+                </div>
+            </div>
+            
+            <div class="flex flex-col items-center py-4 gap-4">
+                <!-- Collections -->
+                <a asp-action="Index" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-database text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Collections
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+                <!-- Logs -->
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100">
+                        <i class="fas fa-chart-line text-gray-700"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Logs
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+                <!-- Settings -->
+                <a asp-action="Settings" asp-controller="Collections" class="relative group">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-200">
+                        <i class="fas fa-code text-gray-600"></i>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        Settings
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Stage Selector -->
+            <div class="mt-auto p-3 border-t border-gray-200">
+                <div class="relative group">
+                    <div id="stageSelector" class="w-10 h-10 border-2 border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 hover:border-gray-400 transition-colors">
+                        @{
+                            var currentStageKey = ViewData["Stage"]?.ToString() ?? "hml";
+                            var currentStageObj = stagesList.FirstOrDefault(s => s.Key == currentStageKey);
+                        }
+                        <span id="stageLetter" class="text-gray-700 font-bold text-sm">@(currentStageObj?.Letter ?? "H")</span>
+                    </div>
+                    <div class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <span id="stageTooltip">@(currentStageObj?.Label ?? "HML")</span>
+                        <div class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom User Avatar -->
+            <div class="p-3">
+                <div class="relative group">
+                    <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-medium cursor-pointer">
+                        @(ViewData["UserEmail"]?.ToString()?.Substring(0, 1).ToUpper() ?? "T")
+                    </div>
+                    <!-- User Menu Dropdown -->
+                    <div class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="py-2">
+                            <!-- User Email -->
+                            <div class="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
+                                @(ViewData["UserEmail"]?.ToString() ?? "")
+                            </div>
+                            <!-- Manage Superusers -->
+                            <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-shield-alt w-5 text-gray-600"></i>
+                                <span class="ml-3">Manage superusers</span>
+                            </a>
+                            <!-- Logout -->
+                            <form asp-action="Logout" asp-controller="Auth" method="post" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors text-left">
+                                    <i class="fas fa-sign-out-alt w-5 text-gray-600"></i>
+                                    <span class="ml-3">Sair</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col bg-white overflow-y-auto">
+        <!-- Search Bar -->
+        <div class="px-8 py-5 bg-gray-50 border-b border-gray-200">
+            <input 
+                type="text" 
+                placeholder="Search term or filter like `level > 0 && data.auth = 'guest'`" 
+                class="w-full px-4 py-2 bg-white border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+            >
+        </div>
+
+        <!-- Log Levels Filter -->
+        <div class="px-8 py-4 bg-white border-b border-gray-200 flex items-center gap-4">
+            <span class="text-sm text-gray-600">Default log levels:</span>
+            <div class="flex gap-2">
+                <button class="px-3 py-1 text-xs font-medium border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
+                    -4: DEBUG
+                </button>
+                <button class="px-3 py-1 text-xs font-medium border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
+                    0: INFO
+                </button>
+                <button class="px-3 py-1 text-xs font-medium border border-gray-300 rounded hover:bg-gray-50 text-gray-700">
+                    4: WARN
+                </button>
+                <button class="px-3 py-1 text-xs font-medium border border-red-300 bg-red-50 text-red-700 rounded hover:bg-red-100">
+                    8: ERROR
+                </button>
+            </div>
+            <div class="ml-auto text-sm text-gray-600">
+                Found <span class="font-semibold">51300</span> logs
+            </div>
+        </div>
+
+        <!-- Graph Section -->
+        <div class="px-8 py-6 bg-white border-b border-gray-200">
+            <div class="bg-gray-50 rounded-lg p-4" style="height: 200px;">
+                <canvas id="logChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="bg-white">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left">
+                            <input type="checkbox" class="w-4 h-4 cursor-pointer">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                            <i class="fas fa-flag mr-1"></i>level
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                            <i class="fas fa-file-alt mr-1"></i>message
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                            <i class="fas fa-calendar mr-1"></i>created
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-4">
+                            <input type="checkbox" class="w-4 h-4 cursor-pointer">
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold">• ERROR (8)</span>
+                        </td>
+                        <td class="px-4 py-4 text-sm">
+                            <div class="font-mono text-xs">
+                                <div class="font-semibold mb-1">GET /favicon.ico</div>
+                                <div class="text-gray-600 space-y-0.5">
+                                    <div><span class="text-gray-500">status:</span> 404</div>
+                                    <div><span class="text-gray-500">execTime:</span> 0.203976ms</div>
+                                    <div><span class="text-gray-500">auth:</span> N/A</div>
+                                    <div><span class="text-gray-500">userIP:</span> [demo_redact]</div>
+                                    <div><span class="text-red-600 font-semibold">error:</span> <span class="text-red-600">File not found.</span></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-sm font-mono text-xs">
+                            <div>2025-12-09</div>
+                            <div class="text-gray-400">00:42:45.698 UTC</div>
+                        </td>
+                        <td class="px-4 py-4 text-gray-400 cursor-pointer hover:text-gray-600">→</td>
+                    </tr>
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-4">
+                            <input type="checkbox" class="w-4 h-4 cursor-pointer">
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold">• ERROR (8)</span>
+                        </td>
+                        <td class="px-4 py-4 text-sm">
+                            <div class="font-mono text-xs">
+                                <div class="font-semibold mb-1">GET /favicon.ico</div>
+                                <div class="text-gray-600 space-y-0.5">
+                                    <div><span class="text-gray-500">status:</span> 404</div>
+                                    <div><span class="text-gray-500">execTime:</span> 0.169183ms</div>
+                                    <div><span class="text-gray-500">auth:</span> N/A</div>
+                                    <div><span class="text-gray-500">userIP:</span> [demo_redact]</div>
+                                    <div><span class="text-red-600 font-semibold">error:</span> <span class="text-red-600">File not found.</span></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-sm font-mono text-xs">
+                            <div>2025-12-09</div>
+                            <div class="text-gray-400">00:42:45.698 UTC</div>
+                        </td>
+                        <td class="px-4 py-4 text-gray-400 cursor-pointer hover:text-gray-600">→</td>
+                    </tr>
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-4">
+                            <input type="checkbox" class="w-4 h-4 cursor-pointer">
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold">• ERROR (8)</span>
+                        </td>
+                        <td class="px-4 py-4 text-sm">
+                            <div class="font-mono text-xs">
+                                <div class="font-semibold mb-1">GET /apple-touch-icon.png</div>
+                                <div class="text-gray-600 space-y-0.5">
+                                    <div><span class="text-gray-500">status:</span> 404</div>
+                                    <div><span class="text-gray-500">execTime:</span> 0.208403ms</div>
+                                    <div><span class="text-gray-500">auth:</span> N/A</div>
+                                    <div><span class="text-gray-500">userIP:</span> [demo_redact]</div>
+                                    <div><span class="text-red-600 font-semibold">error:</span> <span class="text-red-600">File not found.</span></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-sm font-mono text-xs">
+                            <div>2025-12-09</div>
+                            <div class="text-gray-400">00:42:45.698 UTC</div>
+                        </td>
+                        <td class="px-4 py-4 text-gray-400 cursor-pointer hover:text-gray-600">→</td>
+                    </tr>
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-4">
+                            <input type="checkbox" class="w-4 h-4 cursor-pointer">
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold">• ERROR (8)</span>
+                        </td>
+                        <td class="px-4 py-4 text-sm">
+                            <div class="font-mono text-xs">
+                                <div class="font-semibold mb-1">GET /apple-touch-icon-precomposed.png</div>
+                                <div class="text-gray-600 space-y-0.5">
+                                    <div><span class="text-gray-500">status:</span> 404</div>
+                                    <div><span class="text-gray-500">execTime:</span> 0.337666ms</div>
+                                    <div><span class="text-gray-500">auth:</span> N/A</div>
+                                    <div><span class="text-gray-500">userIP:</span> [demo_redact]</div>
+                                    <div><span class="text-red-600 font-semibold">error:</span> <span class="text-red-600">File not found.</span></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-sm font-mono text-xs">
+                            <div>2025-12-09</div>
+                            <div class="text-gray-400">00:42:45.698 UTC</div>
+                        </td>
+                        <td class="px-4 py-4 text-gray-400 cursor-pointer hover:text-gray-600">→</td>
+                    </tr>
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-4 py-4">
+                            <input type="checkbox" class="w-4 h-4 cursor-pointer">
+                        </td>
+                        <td class="px-4 py-4">
+                            <span class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-semibold">• ERROR (8)</span>
+                        </td>
+                        <td class="px-4 py-4 text-sm">
+                            <div class="font-mono text-xs">
+                                <div class="font-semibold mb-1">GET /apple-touch-icon-precomposed.png</div>
+                                <div class="text-gray-600 space-y-0.5">
+                                    <div><span class="text-gray-500">status:</span> 404</div>
+                                    <div><span class="text-gray-500">execTime:</span> 0.208403ms</div>
+                                    <div><span class="text-gray-500">auth:</span> N/A</div>
+                                    <div><span class="text-gray-500">userIP:</span> [demo_redact]</div>
+                                    <div><span class="text-red-600 font-semibold">error:</span> <span class="text-red-600">File not found.</span></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 text-sm font-mono text-xs">
+                            <div>2025-12-09</div>
+                            <div class="text-gray-400">00:42:45.698 UTC</div>
+                        </td>
+                        <td class="px-4 py-4 text-gray-400 cursor-pointer hover:text-gray-600">→</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Stage Selection Modal -->
+<div id="stageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-80">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Select Stage</h3>
+            <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-2">
+            @foreach (var stageItem in stagesList)
+            {
+                <form asp-action="UpdateStage" asp-controller="Collections" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="stage" value="@stageItem.Key" />
+                    <button type="submit" class="w-full px-4 py-3 text-left border-2 @(ViewData["Stage"]?.ToString() == stageItem.Key ? "border-black bg-gray-50" : "border-gray-200") rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold text-gray-900">@stageItem.Label</div>
+                                <div class="text-xs text-gray-500">@stageItem.Description</div>
+                            </div>
+                            <div class="w-8 h-8 border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                                <span class="text-gray-700 font-bold text-sm">@stageItem.Letter</span>
+                            </div>
+                        </div>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Stage configuration
+        const stages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((List<genial_dotnet_crm.Models.Stage>)ViewData["Stages"]).ToDictionary(s => s.Key, s => new { letter = s.Letter, name = s.Label })));
+
+        // Get current stage from server (session)
+        const currentStage = '@ViewData["Stage"]' || 'hml';
+
+        // Update stage display
+        function updateStageDisplay(stage) {
+            const stageData = stages[stage];
+            if (stageData) {
+                const letterEl = document.getElementById('stageLetter');
+                const tooltipEl = document.getElementById('stageTooltip');
+                if (letterEl) letterEl.textContent = stageData.letter;
+                if (tooltipEl) tooltipEl.textContent = stageData.name;
+            }
+        }
+
+        // Initialize stage display
+        updateStageDisplay(currentStage);
+
+        // Open modal
+        document.getElementById('stageSelector').addEventListener('click', function() {
+            document.getElementById('stageModal').classList.remove('hidden');
+        });
+
+        // Close modal
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('stageModal').classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('stageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+
+        // Initialize Chart
+        const ctx = document.getElementById('logChart').getContext('2d');
+        const logChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['2 de dez.', '12', '3 de dez.', '12', '4 de dez.', '12', '5 de dez.', '12', '6 de dez.', '12', '7 de dez.', '12', '8 de dez.'],
+                datasets: [{
+                    label: 'Logs',
+                    data: [200, 450, 300, 800, 600, 1200, 500, 1100, 900, 1400, 700, 1300, 600],
+                    borderColor: 'rgb(239, 68, 68)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 1500,
+                        ticks: {
+                            stepSize: 500
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
+
