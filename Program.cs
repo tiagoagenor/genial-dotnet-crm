@@ -13,11 +13,13 @@ if (mongoDbSettings == null)
     throw new InvalidOperationException("MongoDB settings not found in configuration.");
 }
 builder.Services.AddSingleton(mongoDbSettings);
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICollectionService, CollectionService>();
 builder.Services.AddScoped<IRecordService, RecordService>();
 builder.Services.AddScoped<IFieldTypeService, FieldTypeService>();
 builder.Services.AddScoped<IStageService, StageService>();
+builder.Services.AddScoped<IUserSessionService, UserSessionService>();
 
 // Configure Sessions
 builder.Services.AddDistributedMemoryCache();

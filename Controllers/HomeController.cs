@@ -2,16 +2,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using System.Diagnostics;
 using genial_dotnet_crm.Models;
+using genial_dotnet_crm.Services;
 
 namespace genial_dotnet_crm.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly IUserSessionService _userSessionService;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, IUserSessionService userSessionService)
     {
         _logger = logger;
+        _userSessionService = userSessionService;
     }
 
     public IActionResult Index()
@@ -34,7 +37,7 @@ public class HomeController : Controller
     public IActionResult StatusCodeHandler(int statusCode)
     {
         // Se não estiver autenticado, redireciona para login
-        if (HttpContext.Session.GetString("IsAuthenticated") != "true")
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth", new { returnUrl = Request.Path });
         }

@@ -9,19 +9,25 @@ public class AuthController : Controller
     private readonly ILogger<AuthController> _logger;
     private readonly IUserService _userService;
     private readonly IStageService _stageService;
+    private readonly IUserSessionService _userSessionService;
 
-    public AuthController(ILogger<AuthController> logger, IUserService userService, IStageService stageService)
+    public AuthController(
+        ILogger<AuthController> logger, 
+        IUserService userService, 
+        IStageService stageService,
+        IUserSessionService userSessionService)
     {
         _logger = logger;
         _userService = userService;
         _stageService = stageService;
+        _userSessionService = userSessionService;
     }
 
     [HttpGet]
     public IActionResult Login(string? returnUrl = null)
     {
         // Se já estiver autenticado, redirecionar
-        if (IsAuthenticated())
+        if (_userSessionService.IsAuthenticated())
         {
             return RedirectToLocal(returnUrl);
         }
@@ -59,14 +65,14 @@ public class AuthController : Controller
             }
 
             // Criar sessão
-            HttpContext.Session.SetString("UserId", user.Id);
-            HttpContext.Session.SetString("UserEmail", user.Email);
-            HttpContext.Session.SetString("IsAuthenticated", "true");
+            _userSessionService.SetUserId(user.Id);
+            _userSessionService.SetUserEmail(user.Email);
+            _userSessionService.SetIsAuthenticated(true);
             
             // Get default stage from database (first one by order)
             var stages = await _stageService.GetAllStagesAsync();
             var defaultStage = stages.FirstOrDefault()?.Key ?? "hml";
-            HttpContext.Session.SetString("Stage", defaultStage);
+            _userSessionService.SetStage(defaultStage);
 
             _logger.LogInformation("User {Email} logged in successfully with stage {Stage}", user.Email, defaultStage);
 
@@ -84,7 +90,7 @@ public class AuthController : Controller
     public IActionResult Register()
     {
         // Se já estiver autenticado, redirecionar
-        if (IsAuthenticated())
+        if (_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Index", "Collections");
         }
@@ -132,14 +138,9 @@ public class AuthController : Controller
     [ValidateAntiForgeryToken]
     public IActionResult Logout()
     {
-        HttpContext.Session.Clear();
+        _userSessionService.Clear();
         _logger.LogInformation("User logged out");
         return RedirectToAction(nameof(Login));
-    }
-
-    private bool IsAuthenticated()
-    {
-        return HttpContext.Session.GetString("IsAuthenticated") == "true";
     }
 
     private IActionResult RedirectToLocal(string? returnUrl)

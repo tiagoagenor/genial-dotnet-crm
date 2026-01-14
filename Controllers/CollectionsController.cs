@@ -15,52 +15,35 @@ public class CollectionsController : Controller
     private readonly IRecordService _recordService;
     private readonly IFieldTypeService _fieldTypeService;
     private readonly IStageService _stageService;
+    private readonly IUserSessionService _userSessionService;
 
     public CollectionsController(
         ILogger<CollectionsController> logger,
         ICollectionService collectionService,
         IRecordService recordService,
         IFieldTypeService fieldTypeService,
-        IStageService stageService)
+        IStageService stageService,
+        IUserSessionService userSessionService)
     {
         _logger = logger;
         _collectionService = collectionService;
         _recordService = recordService;
         _fieldTypeService = fieldTypeService;
         _stageService = stageService;
-    }
-
-    private bool IsAuthenticated()
-    {
-        return HttpContext.Session.GetString("IsAuthenticated") == "true";
-    }
-
-    private string GetUserId()
-    {
-        return HttpContext.Session.GetString("UserId") ?? string.Empty;
-    }
-
-    private string GetStage()
-    {
-        return HttpContext.Session.GetString("Stage") ?? "hml";
-    }
-
-    private string GetUserEmail()
-    {
-        return HttpContext.Session.GetString("UserEmail") ?? string.Empty;
+        _userSessionService = userSessionService;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
-        var userId = GetUserId();
-        var stage = GetStage();
-        var userEmail = GetUserEmail();
+        var userId = _userSessionService.GetUserId();
+        var stage = _userSessionService.GetStage();
+        var userEmail = _userSessionService.GetUserEmail();
 
         var collections = await _collectionService.GetCollectionsByUserAsync(userId, stage);
         var fieldTypes = await _fieldTypeService.GetAllFieldTypesAsync();
@@ -79,14 +62,14 @@ public class CollectionsController : Controller
     [Route("Collections/New")]
     public async Task<IActionResult> NewCollection()
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
-        var userId = GetUserId();
-        var stage = GetStage();
-        var userEmail = GetUserEmail();
+        var userId = _userSessionService.GetUserId();
+        var stage = _userSessionService.GetStage();
+        var userEmail = _userSessionService.GetUserEmail();
 
         var collections = await _collectionService.GetCollectionsByUserAsync(userId, stage);
         var fieldTypes = await _fieldTypeService.GetAllFieldTypesAsync();
@@ -106,14 +89,14 @@ public class CollectionsController : Controller
     [Route("Collections/{id}/Edit")]
     public async Task<IActionResult> Edit(string id)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
-        var userId = GetUserId();
-        var stage = GetStage();
-        var userEmail = GetUserEmail();
+        var userId = _userSessionService.GetUserId();
+        var stage = _userSessionService.GetStage();
+        var userEmail = _userSessionService.GetUserEmail();
 
         var collections = await _collectionService.GetCollectionsByUserAsync(userId, stage);
         var fieldTypes = await _fieldTypeService.GetAllFieldTypesAsync();
@@ -159,15 +142,15 @@ public class CollectionsController : Controller
     [Route("Collections")]
     public async Task<IActionResult> CreateCollection([FromBody] CreateCollectionRequest request)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Not authenticated" });
         }
 
         try
         {
-            var userId = GetUserId();
-            var stage = GetStage();
+            var userId = _userSessionService.GetUserId();
+            var stage = _userSessionService.GetStage();
 
             // Validate duplicate system name
             var existingByName = await _collectionService.GetCollectionByNameAsync(request.Name, userId, stage);
@@ -200,14 +183,14 @@ public class CollectionsController : Controller
     [Route("Collections/{id}")]
     public async Task<IActionResult> UpdateCollection(string id, [FromBody] CreateCollectionRequest request)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Not authenticated" });
         }
 
         try
         {
-            var userId = GetUserId();
+            var userId = _userSessionService.GetUserId();
             var existing = await _collectionService.GetCollectionByIdAsync(id);
 
             if (existing == null || existing.UserId != userId)
@@ -222,7 +205,7 @@ public class CollectionsController : Controller
             // If name is being changed, check for conflict with other collections
             if (existing.Name != request.Name)
             {
-                var conflict = await _collectionService.GetCollectionByNameAsync(request.Name, userId, GetStage());
+                var conflict = await _collectionService.GetCollectionByNameAsync(request.Name, userId, _userSessionService.GetStage());
                 if (conflict != null && conflict.Id != id)
                 {
                     return Json(new { success = false, message = $"A collection with system name '{request.Name}' already exists." });
@@ -244,14 +227,14 @@ public class CollectionsController : Controller
     [Route("Collections/{id}")]
     public async Task<IActionResult> Delete(string id)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Not authenticated" });
         }
 
         try
         {
-            var userId = GetUserId();
+            var userId = _userSessionService.GetUserId();
             var collection = await _collectionService.GetCollectionByIdAsync(id);
 
             if (collection == null || collection.UserId != userId)
@@ -268,7 +251,7 @@ public class CollectionsController : Controller
             }
 
             // Also delete the dynamic collection that stores records (if it exists)
-            var stage = GetStage();
+            var stage = _userSessionService.GetStage();
             var collectionName = $"{stage}_{collection.Name}";
             try
             {
@@ -295,14 +278,14 @@ public class CollectionsController : Controller
     [HttpGet]
     public async Task<IActionResult> Collection(string id)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
-        var userId = GetUserId();
-        var stage = GetStage();
-        var userEmail = GetUserEmail();
+        var userId = _userSessionService.GetUserId();
+        var stage = _userSessionService.GetStage();
+        var userEmail = _userSessionService.GetUserEmail();
 
         var collection = await _collectionService.GetCollectionByIdAsync(id);
         if (collection == null || collection.UserId != userId)
@@ -328,14 +311,14 @@ public class CollectionsController : Controller
     [HttpGet]
     public async Task<IActionResult> NewRecord(string id)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
-        var userId = GetUserId();
-        var stage = GetStage();
-        var userEmail = GetUserEmail();
+        var userId = _userSessionService.GetUserId();
+        var stage = _userSessionService.GetStage();
+        var userEmail = _userSessionService.GetUserEmail();
 
         var collection = await _collectionService.GetCollectionByIdAsync(id);
         if (collection == null || collection.UserId != userId)
@@ -415,15 +398,15 @@ public class CollectionsController : Controller
     [Consumes("application/x-www-form-urlencoded", "multipart/form-data")]
     public async Task<IActionResult> CreateRecord(string collectionId, IFormCollection form)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
         try
         {
-            var userId = GetUserId();
-            var stage = GetStage();
+            var userId = _userSessionService.GetUserId();
+            var stage = _userSessionService.GetStage();
 
             var collection = await _collectionService.GetCollectionByIdAsync(collectionId);
             if (collection == null || collection.UserId != userId)
@@ -529,15 +512,15 @@ public class CollectionsController : Controller
     [Consumes("application/json")]
     public async Task<IActionResult> CreateRecordApi([FromBody] CreateRecordRequest request)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Not authenticated" });
         }
 
         try
         {
-            var userId = GetUserId();
-            var stage = GetStage();
+            var userId = _userSessionService.GetUserId();
+            var stage = _userSessionService.GetStage();
 
             var collection = await _collectionService.GetCollectionByIdAsync(request.CollectionId);
             if (collection == null || collection.UserId != userId)
@@ -574,14 +557,14 @@ public class CollectionsController : Controller
     [HttpGet]
     public async Task<IActionResult> GetRecords(string collectionId)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Not authenticated" });
         }
 
         try
         {
-            var userId = GetUserId();
+            var userId = _userSessionService.GetUserId();
             var collection = await _collectionService.GetCollectionByIdAsync(collectionId);
             
             if (collection == null || collection.UserId != userId)
@@ -589,7 +572,7 @@ public class CollectionsController : Controller
                 return Json(new { success = false, message = "Collection not found" });
             }
 
-            var stage = GetStage();
+            var stage = _userSessionService.GetStage();
             // Create collection name with stage prefix: {stage}_{collectionName}
             var collectionName = $"{stage}_{collection.Name}";
 
@@ -642,13 +625,13 @@ public class CollectionsController : Controller
     [HttpGet]
     public async Task<IActionResult> Logs()
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
-        var stage = GetStage();
-        var userEmail = GetUserEmail();
+        var stage = _userSessionService.GetStage();
+        var userEmail = _userSessionService.GetUserEmail();
         var stages = await _stageService.GetAllStagesAsync();
 
         ViewData["Stages"] = stages;
@@ -661,13 +644,13 @@ public class CollectionsController : Controller
     [HttpGet]
     public async Task<IActionResult> Settings()
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
-        var stage = GetStage();
-        var userEmail = GetUserEmail();
+        var stage = _userSessionService.GetStage();
+        var userEmail = _userSessionService.GetUserEmail();
         var stages = await _stageService.GetAllStagesAsync();
 
         ViewData["Stages"] = stages;
@@ -680,7 +663,7 @@ public class CollectionsController : Controller
     [HttpPost]
     public async Task<IActionResult> UpdateStage(string stage)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
@@ -690,7 +673,7 @@ public class CollectionsController : Controller
             var stageObj = await _stageService.GetStageByKeyAsync(stage.ToLower());
             if (stageObj != null)
             {
-                HttpContext.Session.SetString("Stage", stageObj.Key);
+                _userSessionService.SetStage(stageObj.Key);
                 _logger.LogInformation("Stage updated to {Stage}", stageObj.Key);
             }
         }
@@ -702,14 +685,14 @@ public class CollectionsController : Controller
     [Route("Collections/GetCollectionsByStage")]
     public async Task<IActionResult> GetCollectionsByStage([FromQuery] string stage)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Unauthorized" });
         }
 
         try
         {
-            var userId = GetUserId();
+            var userId = _userSessionService.GetUserId();
 
             // Get collections for the specified stage
             var collections = await _collectionService.GetCollectionsByUserAsync(userId, stage);
@@ -736,16 +719,16 @@ public class CollectionsController : Controller
     [Route("Collections/{id}/Migrate")]
     public async Task<IActionResult> Migrate(string id)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return RedirectToAction("Login", "Auth");
         }
 
         try
         {
-            var userId = GetUserId();
-            var currentStage = GetStage();
-            var userEmail = GetUserEmail();
+            var userId = _userSessionService.GetUserId();
+            var currentStage = _userSessionService.GetStage();
+            var userEmail = _userSessionService.GetUserEmail();
 
             var collection = await _collectionService.GetCollectionByIdAsync(id);
             if (collection == null)
@@ -781,15 +764,15 @@ public class CollectionsController : Controller
     [Route("Collections/{id}/CheckMigration")]
     public async Task<IActionResult> CheckMigration(string id, [FromQuery] string targetStage, [FromQuery] string? collectionName = null)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Unauthorized" });
         }
 
         try
         {
-            var userId = GetUserId();
-            var currentStage = GetStage();
+            var userId = _userSessionService.GetUserId();
+            var currentStage = _userSessionService.GetStage();
 
             // Get source collection
             var sourceCollection = await _collectionService.GetCollectionByIdAsync(id);
@@ -884,15 +867,15 @@ public class CollectionsController : Controller
     [Route("Collections/{id}/Migrate")]
     public async Task<IActionResult> Migrate(string id, [FromBody] MigrateRequest request)
     {
-        if (!IsAuthenticated())
+        if (!_userSessionService.IsAuthenticated())
         {
             return Json(new { success = false, message = "Unauthorized" });
         }
 
         try
         {
-            var userId = GetUserId();
-            var currentStage = GetStage();
+            var userId = _userSessionService.GetUserId();
+            var currentStage = _userSessionService.GetStage();
 
             // Get source collection
             var sourceCollection = await _collectionService.GetCollectionByIdAsync(id);
